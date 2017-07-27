@@ -1,0 +1,7 @@
+# baseline
+git config --local user.name "hongsheng huang"
+git config --local user.email "hongsheng.huang@uisee.com"
+git remote add origin http://192.168.100.39/lbin/MV3D.git
+git add .  
+git commit -m 'MV3D'
+ git push -u origin master 

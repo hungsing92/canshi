@@ -1,0 +1,17 @@
+outputs/*
+net/roipooling_op/__pycache__/
+*.py[cod]
+# Python:
+*.so
+*.egg
+*.egg-info
+*.pyc
+evaluate_object/
+__pycache__/
+net/__pycache__/
+net/processing/__pycache__/
+net/utility/__pycache__/
+outputs/
+evaluate_object/val_R/
+evaluate_object/val_gt/
+__pycache__/
