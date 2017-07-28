@@ -36,7 +36,6 @@ def load_dummy_datas(index):
     num_frames = []
     rgbs      =[]
     gt_labels =[]
-    gt_3dTo2Ds = []
     gt_boxes2d=[]
     rgbs_norm =[]
 
@@ -45,54 +44,30 @@ def load_dummy_datas(index):
         num_frames=len(index)
         print('num_frames:%d'%num_frames)
     for n in range(num_frames):
-        print('processing img:%d,%05d'%(n,int(index[n])))
+        print('loading img:%d,%05d'%(n,int(index[n])))
         try:
-            gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index[n]))
+            gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%010d.npy'%int(index[n]))
         except:
             print('No target in this image')
             continue
-        rgb   = cv2.imread(kitti_dir+'/image_2/%06d.png'%int(index[n]))
+        rgb   = cv2.imread(train_data_root+'/Raw_Images/%010d.png'%int(index[n]))
         rgbs_norm0=(rgb-PIXEL_MEANS)/255
  
-        gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index[n]))
-        gt_3dTo2D = np.load(train_data_root+'/gt_3dTo2D/gt_3dTo2D_%05d.npy'%int(index[n]))
-        gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%05d.npy'%int(index[n]))        
+        gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%010d.npy'%int(index[n]))
+        gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%010d.npy'%int(index[n]))        
 
 
         rgbs.append(rgb)
         gt_labels.append(gt_label)
-        gt_3dTo2Ds.append(gt_3dTo2D)
         gt_boxes2d.append(gt_box2d)
         rgbs_norm.append(rgbs_norm0)
 
-        # explore dataset:
-        if 0:
-            fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 500))
-            projections=box3d_to_rgb_projections(gt_box3d)
-            rgb1 = draw_rgb_projections(rgb, projections, color=(255,255,255), thickness=2)
-            top_image1 = draw_box3d_on_top(top_image, gt_box3d, color=(255,255,255), thickness=2)
+    return  rgbs, gt_labels, gt_boxes2d, rgbs_norm, index
 
-            imshow('rgb',rgb1)
-            imshow('top_image',top_image1)
-            azimuth,elevation,distance,focalpoint = MM_PER_VIEW1
-            mlab.view(azimuth,elevation,distance,focalpoint)
-            mlab.clf(fig)
-            draw_lidar(lidar, fig=fig)
-            draw_gt_boxes3d(gt_box3d, fig=fig)
-            mlab.show(1)
-            cv2.waitKey(0)
-            mlab.close()
-            pass
-    # pdb.set_trace()
-    # rgbs=np.array(rgbs)
-    ##exit(0)
-    mlab.close(all=True)
-    return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index
+# index_list=open(train_data_root+'/train.txt')
+# index = [ int(i.strip()) for i in index_list]
+# print ('length of index : %d'%len(index))
 
-index_list=open(train_data_root+'/train.txt')
-index = [ int(i.strip()) for i in index_list]
-print ('length of index : %d'%len(index))
-MM_PER_VIEW1 = 180, 70, 30, [1,1,0]
 vis=0
 # ohem=1
 def run_train():
@@ -104,10 +79,10 @@ def run_train():
     makedirs(out_dir +'/log')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     
-    # index=np.load(train_data_root+'/train.npy')
-    index_file=open(train_data_root+'/train.txt')
-    index = [ int(i.strip()) for i in index_file]
-    index_file.close()
+    index=np.load(train_data_root+'/train_list.npy')
+    # index_file=open(train_data_root+'/train.npy')
+    # index = [ int(i.strip()) for i in index_file]
+    # index_file.close()
     index=sorted(index)
     index=np.array(index)
     num_frames = len(index)
@@ -116,7 +91,7 @@ def run_train():
     if 1:
         ###generate anchor base 
         ratios_rgb=np.array([0.5,1,2], dtype=np.float32)
-        scales_rgb=np.array([1,2,4,5],   dtype=np.float32)
+        scales_rgb=np.array([0.5,1,2,4,5],   dtype=np.float32)
         bases_rgb = make_bases(
             base_size = 48,
             ratios=ratios_rgb,
@@ -127,7 +102,7 @@ def run_train():
         stride = 8
         out_shape=(2,2)
 
-        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[:3])
+        rgbs, gt_labels, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[:3])
         # rgbs, tops, fronts, gt_labels, gt_boxes3d, top_imgs, front_imgs, rgbs_norm, image_index, lidars = load_dummy_datas()
 
         rgb_shape   = rgbs[0].shape
@@ -154,7 +129,6 @@ def run_train():
             ( [rgb_features,     rgb_rois,     7,7,1./(1*stride)],),num_class, out_shape) #<todo>  add non max suppression
 
 
-
     #loss ########################################################################################################
     rgb_inds   = tf.placeholder(shape=[None   ], dtype=tf.int32,   name='rgb_ind'    )
     rgb_pos_inds = tf.placeholder(shape=[None   ], dtype=tf.int32,   name='rgb_pos_ind')
@@ -164,14 +138,11 @@ def run_train():
 
     fuse_labels  = tf.placeholder(shape=[None            ], dtype=tf.int32,   name='fuse_label' )
     fuse_targets = tf.placeholder(shape=[None, 4], dtype=tf.float32, name='fuse_target')
-    fuse_targets_3dTo2Ds = tf.placeholder(shape=[None, 16], dtype=tf.float32, name='fuse_target')
 
-
-    fuse_cls_loss, fuse_reg_loss, fuse_reg_loss_3dTo2D = rcnn_loss_3dTo2D(fuse_scores, fuse_deltas, fuse_labels, fuse_targets, fuse_deltas_3dTo2D, fuse_targets_3dTo2Ds)
+    fuse_cls_loss, fuse_reg_loss= rcnn_loss_3dTo2D(fuse_scores, fuse_deltas, fuse_labels, fuse_targets)
 
     tf.summary.scalar('rcnn_cls_loss', fuse_cls_loss)
     tf.summary.scalar('rcnn_reg_loss', fuse_reg_loss)
-    tf.summary.scalar('rcnn_reg_loss_3dTo2D', fuse_reg_loss_3dTo2D)
     tf.summary.scalar('rpn_cls_loss', rgb_cls_loss)
     tf.summary.scalar('rpn_reg_loss', rgb_reg_loss)
 
@@ -180,7 +151,7 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+0.5*fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+l2)
 
     max_iter = 200000
     iter_debug=1
@@ -192,7 +163,7 @@ def run_train():
     merged = tf.summary.merge_all()
 
     sess = tf.InteractiveSession()  
-    train_writer = tf.summary.FileWriter( './outputs/tensorboard/V_2dTo3d_Res8',
+    train_writer = tf.summary.FileWriter( './outputs/tensorboard/2D_pretrain',
                                       sess.graph)
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
@@ -200,7 +171,7 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        saver.restore(sess, './outputs/check_points/snap_R2R_3drpn_rgbloss_050000.ckpt') 
+        saver.restore(sess, './outputs/check_points/snap_2D_pretrain_015000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
@@ -246,14 +217,14 @@ def run_train():
                         end_flag=1
                     # pdb.set_trace()
 
-                    rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[frame_range[frame:frame_end]])
+                    rgbs, gt_labels, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[frame_range[frame:frame_end]])
                 idx=0
             if (end_flag==1) and (idx+frame)==num_frames:
                 idx=0
             print('processing image : %s'%image_index[idx])
 
-            if (iter+1)%(10000)==0:
-                rate=0.9*rate
+            if (iter+1)%(20000)==0:
+                rate=0.8*rate
 
             rgb_shape   = rgbs[idx].shape
             batch_rgb_images    = rgbs_norm[idx].reshape(1,*rgb_shape)
@@ -264,7 +235,6 @@ def run_train():
                 idx=idx+1
                 continue
 
-            batch_gt_3dTo2Ds   = gt_3dTo2Ds[idx]
             batch_gt_boxes2d   = gt_boxes2d[idx]
             
             ## run propsal generation ------------
@@ -290,11 +260,9 @@ def run_train():
             ## generate  train rois  ------------
             batch_rgb_inds, batch_rgb_pos_inds, batch_rgb_labels, batch_rgb_targets  = \
                 rpn_target ( anchors_rgb, inside_inds_rgb, batch_gt_labels,  batch_gt_boxes2d)
-            batch_rgb_rois, batch_fuse_labels, batch_fuse_targets2d, batch_fuse_targets_3dTo2Ds = rcnn_target_3dTo2D(batch_proposals, batch_gt_labels, batch_gt_boxes2d, batch_gt_3dTo2Ds, rgb_shape[1], rgb_shape[0])
+            batch_rgb_rois, batch_fuse_labels, batch_fuse_targets2d = rcnn_target_3dTo2D(batch_proposals, batch_gt_labels, batch_gt_boxes2d, rgb_shape[1], rgb_shape[0])
             # pdb.set_trace()
             #      rcnn_target(  batch_proposals, batch_gt_labels, batch_gt_top_boxes, batch_gt_boxes3d )
-
-            batch_rgb_rois, batch_fuse_labels, batch_fuse_targets2d, batch_fuse_targets_3dTo2Ds = rcnn_target_3dTo2D(batch_proposals, batch_gt_labels, batch_gt_boxes2d, batch_gt_3dTo2Ds, rgb_shape[1], rgb_shape[0])
 
 
             print('nums of rcnn batch: %d'%len(batch_rgb_rois))
@@ -302,26 +270,26 @@ def run_train():
             if vis and iter%iter_debug==0:
                 rgb       = rgbs[idx]
 
-                img_gt     = draw_rpn_gt(rgb, batch_gt_boxes2d, batch_gt_labels)
-                rgb_label  = draw_rpn_labels (img_gt, anchors_rgb, batch_rgb_inds, batch_rgb_labels )
-                rgb_target = draw_rpn_targets(rgb, anchors_rgb, batch_rgb_pos_inds, batch_rgb_targets)
+                # img_gt     = draw_rpn_gt(rgb, batch_gt_boxes2d, batch_gt_labels)
+                rpn_label_plot  = draw_rpn_labels (rgb, anchors_rgb, batch_rgb_inds, batch_rgb_labels )
+                rpn_target_plot = draw_rpn_targets(rgb, anchors_rgb, batch_rgb_pos_inds, batch_rgb_targets)
                 #imshow('img_rpn_gt',img_gt)
-                imshow('img_rgb_label',rgb_label)
-                imshow('img_rpn_target',rgb_target)
+                imshow('img_rpn_label',rpn_label_plot)
+                imshow('img_rpn_target',rpn_target_plot)
 
                 img_label  = draw_rcnn_labels (rgb, batch_rgb_rois, batch_fuse_labels )
                 img_target = draw_rcnn_targets(rgb, batch_rgb_rois, batch_fuse_labels, batch_fuse_targets2d)
                 imshow('img_rcnn_label',img_label)
                 imshow('img_rcnn_target',img_target)
 
-                img_rgb_rois = draw_boxes(rgb, batch_rgb_rois[:,1:5], color=(255,0,255), thickness=1)
-                imshow('img_rgb_rois',img_rgb_rois)
+                # img_rgb_rois = draw_boxes(rgb, batch_rgb_rois[:,1:5], color=(255,0,255), thickness=1)
+                # imshow('img_rgb_rois',img_rgb_rois)
 
-                projections=box_transform_3dTo2D_inv(batch_rgb_rois[:,1:],batch_fuse_targets_3dTo2Ds)
-                img_rcnn_3dTo2D = draw_rgb_projections(rgb, projections, color=(0,0,255), thickness=1)
-                imshow('img_rcnn_3dTo2D',img_rcnn_3dTo2D)
+                # projections=box_transform_3dTo2D_inv(batch_rgb_rois[:,1:],batch_fuse_targets_3dTo2Ds)
+                # img_rcnn_3dTo2D = draw_rgb_projections(rgb, projections, color=(0,0,255), thickness=1)
+                # imshow('img_rcnn_3dTo2D',img_rcnn_3dTo2D)
                 # plt.pause(0.5)
-                cv2.waitKey(500)
+                cv2.waitKey(200)
 
             ## run classification and regression loss -----------
             fd2={
@@ -338,15 +306,14 @@ def run_train():
                 fuse_labels:  batch_fuse_labels,
                 fuse_targets: batch_fuse_targets2d,
 
-                fuse_targets_3dTo2Ds: batch_fuse_targets_3dTo2Ds
             }
 
-            _, rcnn_probs, batch_rgb_cls_loss, batch_rgb_reg_loss, batch_fuse_cls_loss, batch_fuse_reg_loss, batch_fuse_reg_loss_dTo2D = \
-               sess.run([solver_step, fuse_probs, rgb_cls_loss, rgb_reg_loss, fuse_cls_loss, fuse_reg_loss, fuse_reg_loss_3dTo2D],fd2)
+            _, rcnn_probs, batch_rgb_cls_loss, batch_rgb_reg_loss, batch_fuse_cls_loss, batch_fuse_reg_loss = \
+               sess.run([solver_step, fuse_probs, rgb_cls_loss, rgb_reg_loss, fuse_cls_loss, fuse_reg_loss],fd2)
 
             speed=time.time()-start_time
-            log.write('%5.1f   %5d    %0.4fs   %0.6f   |   %0.5f   %0.5f   |   %0.5f   %0.5f  |%0.5f   \n' %\
-                (epoch, iter, speed, rate, batch_rgb_cls_loss, batch_rgb_reg_loss, batch_fuse_cls_loss, batch_fuse_reg_loss, batch_fuse_reg_loss_dTo2D))
+            log.write('%5.1f   %5d    %0.4fs   %0.6f   |   %0.5f   %0.5f   |   %0.5f   %0.5f    \n' %\
+                (epoch, iter, speed, rate, batch_rgb_cls_loss, batch_rgb_reg_loss, batch_fuse_cls_loss, batch_fuse_reg_loss))
             
             # debug: ------------------------------------
 
@@ -386,7 +353,7 @@ def run_train():
             # save: ------------------------------------
             
             if (iter)%5000==0 and (iter!=0):
-                saver.save(sess, out_dir + '/check_points/snap_R2R_3drpn_rgbloss_%06d.ckpt'%iter)  #iter
+                saver.save(sess, out_dir + '/check_points/snap_2D_pretrain_%06d.ckpt'%iter)  #iter
                 # saver_rgb.save(sess, out_dir + '/check_points/pretrained_Res_rgb_model%06d.ckpt'%iter)
                 # saver_top.save(sess, out_dir + '/check_points/pretrained_Res_top_model%06d.ckpt'%iter)
 

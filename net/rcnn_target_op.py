@@ -68,7 +68,7 @@ def rcnn_target(rois, gt_labels, gt_boxes, gt_boxes3d):
     return rois, labels, targets
 
 
-def rcnn_target_3dTo2D(rois, gt_labels, gt_boxes, gt_3dTo2Ds, width, height):
+def rcnn_target_3dTo2D(rois, gt_labels, gt_boxes, width, height):
 
     # Include "ground-truth" in the set of candidate rois
     rois = rois.reshape(-1,5)  # Proposal (i, x1, y1, x2, y2) coming from RPN
@@ -110,17 +110,12 @@ def rcnn_target_3dTo2D(rois, gt_labels, gt_boxes, gt_3dTo2Ds, width, height):
     labels[fg_rois_per_this_image:] = 0  # Clamp la bels for the background RoIs to 0
 
     gt_boxes2d = gt_boxes[gt_assignment[keep]]
-    gt_3dTo2D_ = gt_3dTo2Ds[gt_assignment[keep]]
-    # pdb.set_trace()
-    gt_3dTo2D_ = gt_3dTo2D_.reshape(-1,16)
-
     et_boxes=rois[:,1:5]
 
     targets_2d = box_transform_2d(rois, gt_boxes2d)
-    targets_3dTo2Ds = box_transform_3dTo2D(et_boxes, gt_3dTo2D_)
 
         #exit(0)
-    return rois, labels, targets_2d, targets_3dTo2Ds
+    return rois, labels, targets_2d
 
 
 
@@ -141,7 +136,7 @@ def draw_rcnn_labels(image, rois,  labels, darker=0.7):
     if 1:
         for i in bg_label_inds:
             a = boxes[i]
-            cv2.rectangle(img_label,(a[0], a[1]), (a[2], a[3]), (32,32,0), 1)
+            cv2.rectangle(img_label,(a[0], a[1]), (a[2], a[3]), (255,128,0), 1)
             cv2.circle(img_label,(a[0], a[1]),2, (32,32,0), -1)
 
     for i in fg_label_inds:

@@ -348,7 +348,7 @@ def draw_rpn_labels(image, anchors, inds, labels, darken=0.7):
 
     for i in fg_label_inds:
         a = anchors[i]
-        cv2.rectangle(img_label,(a[0], a[1]), (a[2], a[3]), (0,0,255), 2)
+        cv2.rectangle(img_label,(a[0], a[1]), (a[2], a[3]), (0,0,255), 1)
         # cv2.circle(img_label,(a[0], a[1]),2, (0,0,255), -1)
 
     return img_label

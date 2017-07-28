@@ -43,7 +43,7 @@ def rcnn_loss(scores, deltas, rcnn_labels, rcnn_targets):
     return rcnn_cls_loss, rcnn_reg_loss
 
 
-def rcnn_loss_3dTo2D(scores, deltas, rcnn_labels, rcnn_targets, deltas_3dTo2D, rcnn_targets_3dTo2D):
+def rcnn_loss_3dTo2D(scores, deltas, rcnn_labels, rcnn_targets):
 
     def modified_smooth_l1( deltas, targets, sigma=3.0):
         '''
@@ -82,20 +82,7 @@ def rcnn_loss_3dTo2D(scores, deltas, rcnn_labels, rcnn_targets, deltas_3dTo2D, r
     rcnn_smooth_l1 = modified_smooth_l1(rcnn_deltas_, rcnn_targets_, sigma=3.0)
     rcnn_reg_loss  = tf.reduce_mean(tf.reduce_sum(rcnn_smooth_l1, axis=1))
 
-    dim = np.prod(deltas_3dTo2D.get_shape().as_list()[1:])//num_class
-    deltas_3dTo2D      = tf.reshape(deltas_3dTo2D,[-1, dim])
-    rcnn_deltas_3dTo2D  = tf.gather(deltas_3dTo2D,  idx)  # remove ignore label
-    tf.summary.histogram('rcnn_deltas_2d', rcnn_deltas_3dTo2D)
-    rcnn_targets_3dTo2D =  tf.reshape(rcnn_targets_3dTo2D,[-1, dim])
-
-    rcnn_deltas_3dTo2D_=tf.boolean_mask(rcnn_deltas_3dTo2D,  index_True)
-    rcnn_targets_3dTo2D_=tf.boolean_mask(rcnn_targets_3dTo2D,  index_True) 
-
-    rcnn_smooth_l1_3dTo2D = modified_smooth_l1(rcnn_deltas_3dTo2D_, rcnn_targets_3dTo2D_, sigma=3.0)
-    rcnn_reg_loss_3dTo2D  = tf.reduce_mean(tf.reduce_sum(rcnn_smooth_l1_3dTo2D, axis=1))
-
-
-    return rcnn_cls_loss, rcnn_reg_loss, rcnn_reg_loss_3dTo2D#, rcnn_pos_inds#
+    return rcnn_cls_loss, rcnn_reg_loss
 
 
 
