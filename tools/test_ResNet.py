@@ -163,8 +163,8 @@ def run_test():
     log = Logger(out_dir+'/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
 
     # index=np.load(train_data_root+'/val_list.npy')
-    # index_file=open(train_data_root+'/val.txt')
-    index_file=open(train_data_root+'/train.txt')
+    index_file=open(train_data_root+'/val.txt')
+    # index_file=open(train_data_root+'/train.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
@@ -182,7 +182,7 @@ def run_test():
         )
 
         num_bases_rgb = len(bases_rgb)
-        stride = 4
+        stride = 8
 
         rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[0])
         # num_frames = len(rgbs)
@@ -230,7 +230,7 @@ def run_test():
         # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
-        saver.restore(sess, './outputs/check_points/snap_R2R_3drpn_rgbloss_110000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_R2R_3drpn_rgbloss_140000.ckpt')
 
         batch_top_cls_loss =0
         batch_top_reg_loss =0
