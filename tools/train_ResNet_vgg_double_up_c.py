@@ -116,7 +116,7 @@ def run_train():
     if 1:
         ###generate anchor base 
         ratios_rgb=np.array([0.5,1,2], dtype=np.float32)
-        scales_rgb=np.array([1,2,4,5],   dtype=np.float32)
+        scales_rgb=np.array([0.5,1,2,4,5],   dtype=np.float32)
         bases_rgb = make_bases(
             base_size = 48,
             ratios=ratios_rgb,
@@ -200,13 +200,15 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        saver.restore(sess, './outputs/check_points/snap_R2R_3drpn_rgbloss_050000.ckpt') 
+        # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
-        # # var_lt_res.pop(0)
-        # saver_0=tf.train.Saver(var_lt_res)        
+        var_lt_res=[v for v in tf.trainable_variables() if not v.name.startswith('fuse/3D')]
+        # var_lt_res.pop(0)
+        saver_0=tf.train.Saver(var_lt_res)        
         # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
+        saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
         
         # var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
         # saver_1=tf.train.Saver(var_lt_vgg)
