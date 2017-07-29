@@ -180,7 +180,7 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+fuse_reg_loss_3dTo2D+l2)
     # 2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+
 
     max_iter = 200000
@@ -205,7 +205,7 @@ def run_train():
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
-        var_lt_res=[v for v in tf.trainable_variables() if  v.name.startswith('fuse/3D/box_bias/Adam')]
+        var_lt_res=[v for v in tf.trainable_variables() if  not v.name.startswith('fuse/3D/box_bias/Adam')]
         pdb.set_trace()
         # # var_lt_res.pop(0)
         saver_0=tf.train.Saver(var_lt_res)        
