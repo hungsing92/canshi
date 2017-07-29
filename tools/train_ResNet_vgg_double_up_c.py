@@ -180,7 +180,8 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+0.5*fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(fuse_reg_loss_3dTo2D+l2)
+    # 2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+
 
     max_iter = 200000
     iter_debug=1
@@ -192,7 +193,7 @@ def run_train():
     merged = tf.summary.merge_all()
 
     sess = tf.InteractiveSession()  
-    train_writer = tf.summary.FileWriter( './outputs/tensorboard/V_2dTo3d_Res8',
+    train_writer = tf.summary.FileWriter( './outputs/tensorboard/V_2dTo3d_Res8_pretrain_stop_gradient',
                                       sess.graph)
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
@@ -204,11 +205,14 @@ def run_train():
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
-        var_lt_res=[v for v in tf.trainable_variables() if not v.name.startswith('fuse/3D')]
-        # var_lt_res.pop(0)
+        var_lt_res=[v for v in tf.trainable_variables() if  v.name.startswith('fuse/3D/box_bias/Adam')]
+        pdb.set_trace()
+        # # var_lt_res.pop(0)
         saver_0=tf.train.Saver(var_lt_res)        
         # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
         saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
+        saver.save(sess, out_dir + '/check_points/snap_2dTo3d_with_2d_pretrained__%06d.ckpt'%2)
+        pdb.set_trace()
         
         # var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
         # saver_1=tf.train.Saver(var_lt_vgg)
@@ -222,12 +226,12 @@ def run_train():
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
-        rate=0.00003
+        rate=0.00001
         for iter in range(max_iter):
             epoch=iter//num_frames+1
             # rate=0.001
             start_time=time.time()
-            if iter%(num_frames*2)==0:
+            if iter%(num_frames*1)==0:
                 idx=0
                 frame=0
                 count=0
@@ -237,17 +241,16 @@ def run_train():
                     raise Exception("Invalid level!", permutation)
                 frame_range=frame_range1
 
-            #load freq samples every 2*freq iterations
+            #load 500 samples every 2000 iterations
             freq=int(10)
             if idx%freq==0 :
                 count+=idx
-                if count%(2*freq)==0:
+                if count%(1*freq)==0:
                     frame+=idx
                     frame_end=min(frame+freq,num_frames)
                     if frame_end==num_frames:
                         end_flag=1
                     # pdb.set_trace()
-
                     rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[frame_range[frame:frame_end]])
                 idx=0
             if (end_flag==1) and (idx+frame)==num_frames:
@@ -387,10 +390,11 @@ def run_train():
                 train_writer.add_summary(summary, iter)
             # save: ------------------------------------
             
-            if (iter)%5000==0 and (iter!=0):
-                saver.save(sess, out_dir + '/check_points/snap_R2R_3drpn_rgbloss_%06d.ckpt'%iter)  #iter
+            if (iter)%1==0 and (iter!=0):
+                saver.save(sess, out_dir + '/check_points/snap_2dTo3d_with_2d_pretrained__%06d.ckpt'%iter)  #iter
                 # saver_rgb.save(sess, out_dir + '/check_points/pretrained_Res_rgb_model%06d.ckpt'%iter)
                 # saver_top.save(sess, out_dir + '/check_points/pretrained_Res_top_model%06d.ckpt'%iter)
+                pdb.set_trace()
 
             idx=idx+1
 

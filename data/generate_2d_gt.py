@@ -10,6 +10,7 @@ import tensorflow as tf
 from time import time
 from net.utility.file import *
 import cv2
+import glob
 # ==============================================================================
 #                                                         POINT_CLOUD_2_BIRDSEYE
 # ==============================================================================
@@ -72,38 +73,30 @@ def load_kitti_calib(calib_path,index):
 
 
 # kitti_dir = "/home/hhs/4T/datasets/KITTI/object/training"
-label_path = os.path.join(kitti_dir, "label_2/")
-img_path = os.path.join(kitti_dir, "image_2/")
-calib_path = os.path.join(kitti_dir, "calib/")
+label_path = os.path.join(train_data_root, "detection_labels")
+img_path = os.path.join(train_data_root, "Raw_Images")
+# calib_path = os.path.join(kitti_dir, "calib/")
 # train_data_root='/home/hhs/4T/datasets/dummy_datas/seg'
-classes = {'__background__':0,'Truck':1,'Car':1, 'Van':1}#,'Tram':1, 'Misc': 1, 'Pedestrian':1, 'Person_sitting': 1, 'Cyclist': 1}#, ' Van':1, 'Truck':1, 'Tram':1}
+classes = {'__background__':0, 'car':1}#, ' Van':1, 'Truck':1, 'Tram':1}
 # result_path='./evaluate_object/val_gt/'
-gt_boxes3d_path = train_data_root + '/gt_boxes3d'
 gt_boxes2d_path = train_data_root + '/gt_boxes2d'
 gt_labels_path = train_data_root + '/gt_labels'
-gt_3dTo2D_path = train_data_root + '/gt_3dTo2D'
 
-empty(gt_boxes3d_path)
+
 empty(gt_boxes2d_path)
 empty(gt_labels_path)
-empty(gt_3dTo2D_path)
 
-makedirs(gt_boxes3d_path)
 makedirs(gt_boxes2d_path)
 makedirs(gt_labels_path)
-makedirs(gt_3dTo2D_path)
 
-width = []
-length = []
-ratio = []
-for i in range(7481):
 
-	calib=load_kitti_calib(calib_path,i)
-	Tr = calib['Tr_velo2cam']
-	P2 = calib['P2']
-	R0 = calib['R0']
-	filename = os.path.join(label_path, str(i).zfill(6) + ".txt")
-	Imgname = os.path.join(img_path, str(i).zfill(6) + ".png")
+img_list=glob.glob(label_path + '/*.txt')
+image_inds=[imflie.strip().split('/')[-1].split('.')[0] for imflie in img_list]
+num=len(img_list)
+for i in range(num):
+
+	filename = os.path.join(label_path, image_inds[i] + ".txt")
+	Imgname = os.path.join(img_path, image_inds[i] + ".png")
 	image = cv2.imread(Imgname)
 	print("Processing: ", filename)
 	with open(filename, 'r') as f:
@@ -112,10 +105,9 @@ for i in range(7481):
 	num_objs = len(lines)
 	if num_objs == 0:
 		continue
-	gt_boxes3d = []
+
 	gt_boxes2d = []
 	gt_labels  = []
-	cam=np.ones([4,1])
 
 	for j in range(num_objs):
 		obj=lines[j].strip().split(' ')
@@ -126,68 +118,24 @@ for i in range(7481):
 		except:
 			continue
 		
-		truncated = float(obj[1])
-		occluded = float(obj[2])
-		x1 = float(obj[4])
-		y1 = float(obj[5])
-		x2 = float(obj[6])
-		y2 = float(obj[7])
-		h = float(obj[8])
-		w = float(obj[9])
-		l = float(obj[10])
-		tx = float(obj[11])
-		ty = float(obj[12])
-		tz = float(obj[13])
-		ry = float(obj[14])
 
-		width.append(w)
-		length.append(l)
-		ratio.append(w/l)
+		x1 = float(obj[1])
+		y1 = float(obj[2])
+		x2 = float(obj[3])
+		y2 = float(obj[4])
 
-		cam[0]=tx
-		cam[1]=ty
-		cam[2]=tz
-		t_lidar=project_cam2velo(cam,Tr)
-		Box = np.array([ # in velodyne coordinates around zero point and without orientation yet\
-	        [ w/2, -w/2, -w/2, w/2,  w/2, -w/2, -w/2, w/2], \
-	        [ l/2, l/2,  -l/2, -l/2, l/2, l/2,  -l/2, -l/2], \
-	        [ 0.0,  0.0,  0.0, 0.0,    h,     h,   h,   h]])
-		rotMat = np.array([\
-	          [np.cos(ry), +np.sin(ry), 0.0], \
-	          [-np.sin(ry),  np.cos(ry), 0.0], \
-	          [        0.0,          0.0, 1.0]])
-
-		cornerPosInVelo = np.dot(rotMat, Box) + np.tile(t_lidar, (8,1)).T
-		box3d=cornerPosInVelo.transpose()
 		box2d=np.array([x1, y1, x2, y2])
 
-		# rgb_boxes=project_to_rgb_roi([box3d], image.shape[1], image.shape[0])
-		# line='Car %.2f %d -10 %.2f %.2f %.2f %.2f -1 -1 -1 -1000 -1000 -1000 -10 %.2f\n'%(truncated, occluded, rgb_boxes[0][1], rgb_boxes[0][2], rgb_boxes[0][3], rgb_boxes[0][4], 1)
-		# file.write(line)
-		
-		# top_box=box3d_to_top_box([box3d])
-		# if (top_box[0][0]>=Top_X0) and (top_box[0][1]>=Top_Y0) and (top_box[0][2]<=Top_Xn) and (top_box[0][3]<=Top_Yn):
-		gt_boxes3d.append(box3d)
 		gt_boxes2d.append(box2d)
 		gt_labels.append(clss)
-	# if len(gt_labels)==0:
-	# 	continue
 
-	gt_3dTo2D=project_velo2rgb(gt_boxes3d,Tr,R0,P2)
+	# img_2d_gt = draw_boxes(image, gt_boxes2d, color=(255,0,255), thickness=1)
+	# imshow('img_2d_gt',img_2d_gt)
+	# cv2.waitKey(20)
 
-	# img_rcnn_nms = draw_rgb_projections(image, gt_3dTo2D, color=(0,0,255), thickness=1)
-	# imshow('draw_rcnn_nms',img_rcnn_nms)
-	# cv2.waitKey(0)
-
-
-	# pdb.set_trace()
-	# if len(gt_labels) == 0:
-	# 	continue
-	# file.close()
-	gt_boxes3d = np.array(gt_boxes3d,dtype=np.float32)
 	gt_boxes2d = np.array(gt_boxes2d,dtype=np.float32)
 	gt_labels  = np.array(gt_labels ,dtype=np.uint8)
-	gt_3dTo2D = np.array(gt_3dTo2D)
+
 	
 # plt.hist(width,50,normed=1,facecolor='g',alpha=0.75)
 # plt.grid(True)
@@ -219,14 +167,14 @@ for i in range(7481):
 # ax.set_zlabel('Z Axis')
 # plt.show()
 
-	np.save(gt_boxes3d_path+'/gt_boxes3d_%05d.npy'%i,gt_boxes3d)
-	np.save(gt_boxes2d_path+'/gt_boxes2d_%05d.npy'%i,gt_boxes2d)
-	np.save(gt_labels_path+'/gt_labels_%05d.npy'%i,gt_labels)
-	np.save(gt_3dTo2D_path+'/gt_3dTo2D_%05d.npy'%i,gt_3dTo2D)
+
+	np.save(gt_boxes2d_path+'/gt_boxes2d_%s.npy'%image_inds[i],gt_boxes2d)
+	np.save(gt_labels_path+'/gt_labels_%s.npy'%image_inds[i],gt_labels)
 
 
-# #Generate train and val list
-# #3DOP train val list http://www.cs.toronto.edu/objprop3d/data/ImageSets.tar.gz
+
+#Generate train and val list
+#3DOP train val list http://www.cs.toronto.edu/objprop3d/data/ImageSets.tar.gz
 files_list=glob.glob(gt_labels_path+"/gt_labels_*.npy")
 index=np.array([file_index.strip().split('_')[-1].split('.')[0] for file_index in files_list ])
 num_frames=len(files_list)
@@ -234,9 +182,9 @@ train_num=int(np.round(num_frames*0.7))
 random_index=np.random.permutation(index)
 train_list=random_index[:train_num]
 val_list=random_index[train_num:]
-np.save(train_data_root+'/train.npy',train_list)
-np.save(train_data_root+'/val.npy',val_list)
-np.save(train_data_root+'/train_val.npy',random_index)
+np.save(train_data_root+'/train_list.npy',train_list)
+np.save(train_data_root+'/val_list.npy',val_list)
+np.save(train_data_root+'/train_val_list.npy',random_index)
 
 
 
