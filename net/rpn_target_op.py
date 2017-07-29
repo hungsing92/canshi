@@ -311,7 +311,7 @@ def rpn_target_Z( anchors, inside_inds, gt_boxes, gt_boxesZ,probs,batch_top_insi
 def draw_rpn_gt(image, gt_boxes, gt_labels=None, darken=0.7):
 
     ## gt
-    img_gt = image.copy()*darken
+    img_gt = image.copy()#*darken
     num =len(gt_boxes)
     for n in range(num):
         b = gt_boxes[n]

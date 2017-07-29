@@ -149,7 +149,7 @@ def IoM(rect_1, rect_2):
 
     return iom, area_compare
 
-def rcnn_nms_2d( probs,  deltas,  rois2d, deltas_3dTo2D, threshold = 0.05):
+def rcnn_nms_2d( probs,  deltas,  rois2d, threshold = 0.05):
 
 
     cls=1  # do for class-one only
@@ -160,7 +160,6 @@ def rcnn_nms_2d( probs,  deltas,  rois2d, deltas_3dTo2D, threshold = 0.05):
 
     rois2d = rois2d[idx]
     deltas = deltas[idx,cls].reshape(-1,4)
-    deltas_3dTo2D = deltas_3dTo2D[idx,cls]
     probs  = probs [idx]
 
     boxes2d = box2d_transform_inv(rois2d[:,1:], deltas)
@@ -168,10 +167,8 @@ def rcnn_nms_2d( probs,  deltas,  rois2d, deltas_3dTo2D, threshold = 0.05):
 
     probs    = probs[keep]
     boxes2d = boxes2d[keep]
-    deltas_3dTo2D = deltas_3dTo2D[keep]
-    projections=box_transform_3dTo2D_inv(boxes2d,deltas_3dTo2D)
 
-    return probs, boxes2d, projections
+    return probs, boxes2d
 
 
 

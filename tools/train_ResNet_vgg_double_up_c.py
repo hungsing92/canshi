@@ -171,7 +171,7 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        saver.restore(sess, './outputs/check_points/snap_2D_pretrain_015000.ckpt') 
+        saver.restore(sess, './outputs/check_points/snap_2D_pretrain_030000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
@@ -191,7 +191,7 @@ def run_train():
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
-        rate=0.00003
+        rate=0.00002
         for iter in range(max_iter):
             epoch=iter//num_frames+1
             # rate=0.001
@@ -223,7 +223,7 @@ def run_train():
                 idx=0
             print('processing image : %s'%image_index[idx])
 
-            if (iter+1)%(20000)==0:
+            if (iter+1)%(10000)==0:
                 rate=0.8*rate
 
             rgb_shape   = rgbs[idx].shape
