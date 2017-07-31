@@ -154,6 +154,9 @@ def load_dummy_datas(index):
 is_show=1
 # MM_PER_VIEW1 = 120, 30, 70, [1,1,0]
 MM_PER_VIEW1 = 180, 70, 60, [1,1,0]#[ 12.0909996 , -1.04700089, -2.03249991]
+
+# train_data_root='/home/users/hhs/4T/datasets/dummy_datas/seg'
+# kitti_dir='/mnt/disk_4T/KITTI/training'
 def run_test():
 
     # output dir, etc
@@ -187,8 +190,9 @@ def run_test():
 
         rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[10])
         # num_frames = len(rgbs)
-
+        
         rgb_shape   = rgbs[0].shape
+        # pdb.set_trace()
         rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
         out_shape=(2,2)
 

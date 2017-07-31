@@ -64,7 +64,7 @@ def load_dummy_datas(index):
     return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index#, lidars
 
 
-# train_data_root='/home/hhs/4T/datasets/2dTo3d_data'
+# train_data_root='~/4T/datasets/2dTo3d_data'
 # kitti_dir='/mnt/disk_4T/KITTI/training'
 
 vis=0
@@ -89,7 +89,7 @@ def run_train():
     if 1:
         ###generate anchor base 
         ratios_rgb=np.array([0.5,1,2], dtype=np.float32)
-        scales_rgb=np.array([1,2,4,5],   dtype=np.float32)
+        scales_rgb=np.array([0.5,1,2,4,5],   dtype=np.float32)
         bases_rgb = make_bases(
             base_size = 48,
             ratios=ratios_rgb,
@@ -97,10 +97,10 @@ def run_train():
         )
 
         num_bases_rgb = len(bases_rgb)
-        stride = 4
+        stride = 8
         out_shape=(2,2)
 
-        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[:3])
+        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[10:13])
         # rgbs, tops, fronts, gt_labels, gt_boxes3d, top_imgs, front_imgs, rgbs_norm, image_index, lidars = load_dummy_datas()
 
         rgb_shape   = rgbs[0].shape
@@ -153,7 +153,7 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(1*rgb_cls_loss+1*rgb_reg_loss+1.5*fuse_cls_loss+2*fuse_reg_loss+2*fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+0.5*fuse_reg_loss_3dTo2D+l2)
 
     max_iter = 200000
     iter_debug=1
@@ -170,21 +170,21 @@ def run_train():
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
         saver  = tf.train.Saver() 
-        # saver.restore(sess, './outputs/check_points/snap_R2R_new_fusesion_augment_pos_samples025000.ckpt') 
+        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train010000.ckpt') 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1')]#resnet_v1_50
         # saver_0=tf.train.Saver(var_lt_res)        
         # # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
 
-        var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
-        saver_1=tf.train.Saver(var_lt_vgg)
-        saver_1.restore(sess, './outputs/check_points/vgg_16.ckpt')
+        # var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
+        # saver_1=tf.train.Saver(var_lt_vgg)
+        # saver_1.restore(sess, './outputs/check_points/vgg_16.ckpt')
 
         batch_top_cls_loss =0
         batch_top_reg_loss =0
         batch_fuse_cls_loss=0
         batch_fuse_reg_loss=0
-        rate=0.0002
+        rate=0.00004
         frame_range = np.arange(num_frames)
         idx=0
         frame=0

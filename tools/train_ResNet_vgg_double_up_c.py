@@ -203,7 +203,7 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train010000.ckpt') 
+        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train005000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
