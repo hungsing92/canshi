@@ -78,8 +78,8 @@ def run_train():
     makedirs(out_dir +'/log')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     # index=np.load(train_data_root+'/train_list.npy')
-    index_file=open(train_data_root+'/train.txt')
-    # index_file=open(train_data_root+'/val.txt')
+    # index_file=open(train_data_root+'/train.txt')
+    index_file=open(train_data_root+'/val.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
@@ -101,7 +101,7 @@ def run_train():
         stride = 8
         out_shape=(2,2)
 
-        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[:3])
+        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[10:13])
         # rgbs, tops, fronts, gt_labels, gt_boxes3d, top_imgs, front_imgs, rgbs_norm, image_index, lidars = load_dummy_datas()
 
         rgb_shape   = rgbs[0].shape
