@@ -64,8 +64,8 @@ def load_dummy_datas(index):
     return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index#, lidars
 
 
-train_data_root='/home/users/hhs/4T/datasets/2dTo3d_data'
-kitti_dir='/mnt/disk_4T/KITTI/training'
+# train_data_root='/home/users/hhs/4T/dataset   s/2dTo3d_data'
+# kitti_dir='/mnt/disk_4T/KITTI/training'
 
 vis=0
 ohem=0
@@ -153,7 +153,7 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+0.5*fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+0.5*fuse_reg_loss+0.5*fuse_reg_loss_3dTo2D+l2)
 
     max_iter = 200000
     iter_debug=1
