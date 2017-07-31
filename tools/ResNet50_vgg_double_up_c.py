@@ -14,11 +14,11 @@ from tensorflow.contrib.slim.python.slim.nets import resnet_v1
 import vgg
 from fpn import build_pyramid
 
-keep_prob=0.5
+# keep_prob=0.5
 # nms_pre_topn_=5000
 # nms_post_topn_=2000
 
-# keep_prob=1
+keep_prob=1
 # nms_pre_topn_=2000
 # nms_post_topn_=300
 
@@ -157,6 +157,7 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
         roi_features,  roi_idxs = tf_roipooling(feature,roi, pool_height, pool_width, pool_scale, name='%d/pool'%n)
         # pdb.set_trace()
         roi_features=flatten(roi_features)
+        roi_features_ = tf.stop_gradient(roi_features)
         with tf.variable_scope('fuse-block-1-%d'%n):
           tf.summary.histogram('fuse-block_input_%d'%n, roi_features)
           block = linear_bn_relu(roi_features, num_hiddens=2048, name='1')#512, so small?
@@ -181,7 +182,9 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
       deltas_3d  = linear(block, num_hiddens=dim*num_class, name='box')
       deltas_3d  = tf.reshape(deltas_3d,(-1,num_class,*out_shape))
     with tf.variable_scope('3D') as sc_:
-      # block = linear_bn_relu(input_, num_hiddens=512, name='3D')
+      block3D = linear_bn_relu(roi_features_, num_hiddens=2048, name='1')#512, so small?
+      block3D_1 = tf.nn.dropout(block3D, keep_prob, name='drop1')
+      block = linear_bn_relu(block3D_1, num_hiddens=512, name='3D')
       # block = tf.nn.dropout(block, keep_prob, name='drop4')
       dim = np.product(16)
       deltas_2d  = linear(block, num_hiddens=dim*num_class, name='box')

@@ -160,7 +160,7 @@ def run_test():
     out_dir = './outputs'
     makedirs(out_dir +'/tf')
     makedirs(out_dir +'/check_points')
-    log = Logger(out_dir+'/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
+    log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
 
     # index=np.load(train_data_root+'/val_list.npy')
     index_file=open(train_data_root+'/val.txt')
@@ -230,11 +230,11 @@ def run_test():
         # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
-        saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        # saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained__000001.ckpt')
+        # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained__100000.ckpt')
         # 
         # pdb.set_trace()
-        # var_lt_res=[v for v in tf.trainable_variables() if not v.name.startswith('fuse/3D')]
+        # var_lt_res=[v for v in tf.all_variables() if not v.name.startswith('fuse/3D')]
         # saver_0=tf.train.Saver(var_lt_res) 
         # saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
 

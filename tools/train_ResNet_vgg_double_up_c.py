@@ -105,7 +105,7 @@ def run_train():
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     
     # index=np.load(train_data_root+'/train.npy')
-    index_file=open(train_data_root+'/train.txt')
+    index_file=open(train_data_root+'/val.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
@@ -176,7 +176,7 @@ def run_train():
     tf.summary.scalar('rpn_reg_loss', rgb_reg_loss)
 
     #solver
-    l2 = l2_regulariser(decay=0.00001)
+    l2 = l2_regulariser(decay=0.000005)
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
@@ -193,7 +193,7 @@ def run_train():
     merged = tf.summary.merge_all()
 
     sess = tf.InteractiveSession()  
-    train_writer = tf.summary.FileWriter( './outputs/tensorboard/V_2dTo3d_Res8_pretrain_stop_gradient',
+    train_writer = tf.summary.FileWriter( './outputs/tensorboard/V_2dTo3d_Res8_pretrain_stop_gradient_ok2',
                                       sess.graph)
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
@@ -201,18 +201,17 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt') 
+        saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained__015000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
-        var_lt_res=[v for v in tf.trainable_variables() if  not v.name.startswith('fuse/3D/box_bias/Adam')]
-        pdb.set_trace()
-        # # var_lt_res.pop(0)
-        saver_0=tf.train.Saver(var_lt_res)        
-        # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
-        saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.save(sess, out_dir + '/check_points/snap_2dTo3d_with_2d_pretrained__%06d.ckpt'%2)
-        pdb.set_trace()
+        # var_lt_res=[v for v in tf.all_variables() if  not v.name.startswith('fuse/3D')]
+        # # pdb.set_trace()
+        # # # var_lt_res.pop(0)
+        # saver_0=tf.train.Saver(var_lt_res)        
+        # # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
+        # saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
+        # pdb.set_trace()
         
         # var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
         # saver_1=tf.train.Saver(var_lt_vgg)
@@ -226,7 +225,7 @@ def run_train():
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
-        rate=0.00001
+        rate=0.00002
         for iter in range(max_iter):
             epoch=iter//num_frames+1
             # rate=0.001
@@ -258,7 +257,7 @@ def run_train():
             print('processing image : %s'%image_index[idx])
 
             if (iter+1)%(10000)==0:
-                rate=0.9*rate
+                rate=0.7*rate
 
             rgb_shape   = rgbs[idx].shape
             batch_rgb_images    = rgbs_norm[idx].reshape(1,*rgb_shape)
@@ -390,11 +389,11 @@ def run_train():
                 train_writer.add_summary(summary, iter)
             # save: ------------------------------------
             
-            if (iter)%1==0 and (iter!=0):
+            if (iter)%5000==0 and (iter!=0):
                 saver.save(sess, out_dir + '/check_points/snap_2dTo3d_with_2d_pretrained__%06d.ckpt'%iter)  #iter
                 # saver_rgb.save(sess, out_dir + '/check_points/pretrained_Res_rgb_model%06d.ckpt'%iter)
                 # saver_top.save(sess, out_dir + '/check_points/pretrained_Res_top_model%06d.ckpt'%iter)
-                pdb.set_trace()
+                # pdb.set_trace()
 
             idx=idx+1
 
