@@ -46,11 +46,12 @@ def load_dummy_datas(index):
         print('num_frames:%d'%num_frames)
     for n in range(num_frames):
         print('processing img:%d,%05d'%(n,int(index[n])))
-        try:
-            gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index[n]))
-        except:
-            print('No target in this image')
-            continue
+        # try:
+        #     gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index[n]))
+        # except:
+        #     print('No target in this image')
+        #     pdb.set_trace()
+        #     continue
         rgb   = cv2.imread(kitti_dir+'/image_2/%06d.png'%int(index[n]))
         rgbs_norm0=(rgb-PIXEL_MEANS)/255
  
@@ -202,7 +203,7 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train005000.ckpt') 
+        # saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train005000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
@@ -268,6 +269,7 @@ def run_train():
 
             batch_gt_labels    = gt_labels[idx]
             if len(batch_gt_labels)==0:
+                # pdb.set_trace()
                 idx=idx+1
                 continue
 
@@ -328,7 +330,8 @@ def run_train():
                 img_rcnn_3dTo2D = draw_rgb_projections(rgb, projections, color=(0,0,255), thickness=1)
                 imshow('img_rcnn_3dTo2D',img_rcnn_3dTo2D)
                 # plt.pause(0.5)
-                cv2.waitKey(500)
+                # cv2.waitKey(500)
+                cv2.waitKey(20)
 
             ## run classification and regression loss -----------
             fd2={

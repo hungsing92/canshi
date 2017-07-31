@@ -163,8 +163,8 @@ def run_test():
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
 
     # index=np.load(train_data_root+'/train.npy')
-    index_file=open(train_data_root+'/val.txt')
-    # index_file=open(train_data_root+'/train.txt')
+    # index_file=open(train_data_root+'/val.txt')
+    index_file=open(train_data_root+'/train.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
 
@@ -232,7 +232,7 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt')
+        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train010000.ckpt')
         # 
         # # pdb.set_trace()
         # var_lt_res=[v for v in tf.global_variables() if not v.name.startswith('fuse/3D')]
@@ -250,6 +250,7 @@ def run_test():
             print('Processing Img: %d  %s'%(iter, index[iter]))
             rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[iter])
             idx=0
+
             rgb_shape   = rgbs[idx].shape
             # top_img=top_imgs[idx]
 
@@ -258,7 +259,11 @@ def run_test():
             batch_gt_labels    = gt_labels[idx]
             batch_gt_3dTo2Ds   = gt_3dTo2Ds[idx]
             batch_gt_boxes2d   = gt_boxes2d[idx]
-
+            if len(batch_gt_labels)==0:
+                # idx=idx+1
+                # pdb.set_trace()
+                cv2.waitKey(0)
+                # continue
             ## run propsal generation ------------
             fd1={
 
