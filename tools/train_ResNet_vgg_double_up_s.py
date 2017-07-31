@@ -154,7 +154,7 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(1*rgb_cls_loss+1*rgb_reg_loss+1.5*fuse_cls_loss+2*fuse_reg_loss+2*fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+0.5*fuse_reg_loss_3dTo2D+l2)
 
     max_iter = 200000
     iter_debug=1
