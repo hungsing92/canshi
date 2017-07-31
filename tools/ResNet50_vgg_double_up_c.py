@@ -62,10 +62,11 @@ def top_feature_net(input, anchors, inds_inside, num_bases):
   #                                    stride, img_width, img_height, img_scale, deltasZ,
   #                                    nms_thresh=0.7, min_size=stride, nms_pre_topn=nms_pre_topn_, nms_post_topn=nms_post_topn_,
   #                                    name ='nms')
-  feature = tf.stop_gradient(block)
-  scores = tf.stop_gradient(scores)
-  probs = tf.stop_gradient(probs)
-  deltas = tf.stop_gradient(deltas)
+  feature = block
+  # feature = tf.stop_gradient(block)
+  # scores = tf.stop_gradient(scores)
+  # probs = tf.stop_gradient(probs)
+  # deltas = tf.stop_gradient(deltas)
   return feature, scores, probs, deltas#, rois, roi_scores,deltasZ, proposals_z, inside_inds_nms
 
 
@@ -157,7 +158,8 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
         roi_features,  roi_idxs = tf_roipooling(feature,roi, pool_height, pool_width, pool_scale, name='%d/pool'%n)
         # pdb.set_trace()
         roi_features=flatten(roi_features)
-        roi_features_ = tf.stop_gradient(roi_features)
+        # roi_features_ = tf.stop_gradient(roi_features)
+
         with tf.variable_scope('fuse-block-1-%d'%n):
           tf.summary.histogram('fuse-block_input_%d'%n, roi_features)
           block = linear_bn_relu(roi_features, num_hiddens=2048, name='1')#512, so small?
@@ -169,11 +171,12 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
         else:
             # input = concat([input,block], axis=1, name='%d/cat'%n)
             input = tf.add(input,block, name ='fuse_feature')
-    input_ = tf.stop_gradient(input)
+    # input_ = tf.stop_gradient(input)
+  input_ = input
   #include background class
   with tf.variable_scope('fuse') as scope:
     block = linear_bn_relu(input_, num_hiddens=512, name='4')#512, so small?
-    block = tf.stop_gradient(block)
+    # block = tf.stop_gradient(block)
     block = tf.nn.dropout(block, keep_prob, name='drop4')
     with tf.variable_scope('2D') as sc:
       dim = np.product([*out_shape])
@@ -182,16 +185,16 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
       deltas_3d  = linear(block, num_hiddens=dim*num_class, name='box')
       deltas_3d  = tf.reshape(deltas_3d,(-1,num_class,*out_shape))
     with tf.variable_scope('3D') as sc_:
-      block3D = linear_bn_relu(roi_features_, num_hiddens=2048, name='1')#512, so small?
+      block3D = linear_bn_relu(roi_features, num_hiddens=2048, name='1')#512, so small?
       block3D_1 = tf.nn.dropout(block3D, keep_prob, name='drop1')
       block = linear_bn_relu(block3D_1, num_hiddens=512, name='3D')
       # block = tf.nn.dropout(block, keep_prob, name='drop4')
       dim = np.product(16)
       deltas_2d  = linear(block, num_hiddens=dim*num_class, name='box')
       deltas_2d  = tf.reshape(deltas_2d,(-1,num_class,16))
-    scores_3d = tf.stop_gradient(scores_3d)
-    probs_3d = tf.stop_gradient(probs_3d)
-    deltas_3d = tf.stop_gradient(deltas_3d)
+    # scores_3d = tf.stop_gradient(scores_3d)
+    # probs_3d = tf.stop_gradient(probs_3d)
+    # deltas_3d = tf.stop_gradient(deltas_3d)
 
 
   return  scores_3d, probs_3d, deltas_3d, deltas_2d

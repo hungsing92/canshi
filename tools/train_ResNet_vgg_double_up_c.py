@@ -89,9 +89,9 @@ def load_dummy_datas(index):
     mlab.close(all=True)
     return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index
 
-index_list=open(train_data_root+'/train.txt')
-index = [ int(i.strip()) for i in index_list]
-print ('length of index : %d'%len(index))
+# index_list=open(train_data_root+'/trainval.txt')
+# index = [ int(i.strip()) for i in index_list]
+# print ('length of index : %d'%len(index))
 MM_PER_VIEW1 = 180, 70, 30, [1,1,0]
 vis=0
 # ohem=1
@@ -105,7 +105,7 @@ def run_train():
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     
     # index=np.load(train_data_root+'/train.npy')
-    index_file=open(train_data_root+'/val.txt')
+    index_file=open(train_data_root+'/trainval.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
@@ -180,7 +180,7 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+0.01*fuse_reg_loss_3dTo2D+l2)
     # 2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+
 
     max_iter = 200000
@@ -193,7 +193,7 @@ def run_train():
     merged = tf.summary.merge_all()
 
     sess = tf.InteractiveSession()  
-    train_writer = tf.summary.FileWriter( './outputs/tensorboard/V_2dTo3d_Res8_pretrain_stop_gradient_ok2',
+    train_writer = tf.summary.FileWriter( './outputs/tensorboard/V_2dTo3d_Res8_pretrain_stop_gradient_ok2_traintxt_val',
                                       sess.graph)
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
@@ -201,16 +201,18 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained__015000.ckpt') 
+        # saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained__105000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
         # var_lt_res=[v for v in tf.all_variables() if  not v.name.startswith('fuse/3D')]
-        # # pdb.set_trace()
-        # # # var_lt_res.pop(0)
-        # saver_0=tf.train.Saver(var_lt_res)        
-        # # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
+        var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
+        # pdb.set_trace()
+        # # var_lt_res.pop(0)
+        saver_0=tf.train.Saver(var_lt_res)        
+        # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
         # saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
+        saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_traintxt_010000.ckpt') 
         # pdb.set_trace()
         
         # var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
@@ -225,7 +227,7 @@ def run_train():
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
-        rate=0.00002
+        rate=0.00004
         for iter in range(max_iter):
             epoch=iter//num_frames+1
             # rate=0.001
@@ -390,7 +392,7 @@ def run_train():
             # save: ------------------------------------
             
             if (iter)%5000==0 and (iter!=0):
-                saver.save(sess, out_dir + '/check_points/snap_2dTo3d_with_2d_pretrained__%06d.ckpt'%iter)  #iter
+                saver.save(sess, out_dir + '/check_points/snap_2dTo3d_with_2d_pretrained_traintxt_%06d.ckpt'%iter)  #iter
                 # saver_rgb.save(sess, out_dir + '/check_points/pretrained_Res_rgb_model%06d.ckpt'%iter)
                 # saver_top.save(sess, out_dir + '/check_points/pretrained_Res_top_model%06d.ckpt'%iter)
                 # pdb.set_trace()

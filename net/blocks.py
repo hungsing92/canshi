@@ -121,11 +121,11 @@ def l2_regulariser(decay):
         if 'weight' in name:  #this is weight
             if 'fuse/3D' in name:
                l2 = 1*decay * tf.nn.l2_loss(v) 
-               tf.add_to_collection('losses', l2)
+               # tf.add_to_collection('losses', l2)
             else:
-                pass
-                # l2 = decay * tf.nn.l2_loss(v)
-            # tf.add_to_collection('losses', l2)
+                # pass
+                l2 = decay * tf.nn.l2_loss(v)
+            tf.add_to_collection('losses', l2)
         elif 'bias' in name:  #this is bias
             pass
         elif 'beta' in name:
