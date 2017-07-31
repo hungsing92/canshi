@@ -203,18 +203,18 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        # saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train005000.ckpt') 
+        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train010000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
         # var_lt_res=[v for v in tf.global_variables() if  not v.name.startswith('fuse/3D')]
-        var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
-        # pdb.set_trace()
-        # # var_lt_res.pop(0)
-        saver_0=tf.train.Saver(var_lt_res)        
-        # # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
-        # saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
+        # var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
+        # # pdb.set_trace()
+        # # # var_lt_res.pop(0)
+        # saver_0=tf.train.Saver(var_lt_res)        
+        # # # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
+        # # saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
+        # saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
         # pdb.set_trace()
         
         # var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
