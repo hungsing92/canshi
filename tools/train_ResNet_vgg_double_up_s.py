@@ -78,7 +78,7 @@ def run_train():
     makedirs(out_dir +'/log')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     # index=np.load(train_data_root+'/train_list.npy')
-    index_file=open(train_data_root+'/train.txt')
+    index_file=open(train_data_root+'train.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
