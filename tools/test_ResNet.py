@@ -162,11 +162,12 @@ def run_test():
     makedirs(out_dir +'/check_points')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
 
-    # index=np.load(train_data_root+'/val_list.npy')
-    # index_file=open(train_data_root+'/val.txt')
-    index_file=open(train_data_root+'/train.txt')
+    # index=np.load(train_data_root+'/train.npy')
+    index_file=open(train_data_root+'/val.txt')
+    # index_file=open(train_data_root+'/train.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
+
     index=sorted(index)
 
     print('len(index):%d'%len(index))
@@ -184,7 +185,7 @@ def run_test():
         num_bases_rgb = len(bases_rgb)
         stride = 8
 
-        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[0])
+        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[10])
         # num_frames = len(rgbs)
 
         rgb_shape   = rgbs[0].shape
@@ -231,12 +232,12 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        # saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_traintxt_010000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt')
         # 
-        # pdb.set_trace()
-        var_lt_res=[v for v in tf.all_variables() if not v.name.startswith('fuse/3D')]
-        saver_0=tf.train.Saver(var_lt_res) 
-        saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
+        # # pdb.set_trace()
+        # var_lt_res=[v for v in tf.global_variables() if not v.name.startswith('fuse/3D')]
+        # saver_0=tf.train.Saver(var_lt_res) 
+        # saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
 
         batch_top_cls_loss =0
         batch_top_reg_loss =0
