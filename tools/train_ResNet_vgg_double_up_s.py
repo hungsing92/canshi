@@ -181,7 +181,7 @@ def run_train():
         # saver_1=tf.train.Saver(var_lt_vgg)
         # saver_1.restore(sess, './outputs/check_points/vgg_16.ckpt')
 
-        var_lt_res=[v for v in tf.global_variables() if  not v.name.startswith('fuse/3D') ]
+        var_lt_res=[v for v in tf.global_variables() if  (not v.name.startswith('fuse/3D')) and ('Adam' not in v.name) ]
         saver_0=tf.train.Saver(var_lt_res) 
         saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
 
