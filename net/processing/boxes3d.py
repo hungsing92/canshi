@@ -370,28 +370,27 @@ def box2d_transform_inv(et_boxes, deltas):
 
 def box_transform_3dTo2D(et_boxes, gt_3dTo2D):
     num=len(et_boxes)
-    deltas=np.zeros((num,12),dtype=np.float32)
+    deltas=np.zeros((num,8),dtype=np.float32)
     et_ws  = et_boxes[:, 2] - et_boxes[:, 0] + 1.0
     et_hs  = et_boxes[:, 3] - et_boxes[:, 1] + 1.0
     c_xs   = (et_boxes[:, 2] + et_boxes[:, 0])/2
     c_ys   = (et_boxes[:, 3] + et_boxes[:, 1])/2
-    center= np.tile(np.hstack([c_xs.reshape(-1,1),c_ys.reshape(-1,1)]),(1,8))
+    center= np.tile(np.hstack([c_xs.reshape(-1,1),c_ys.reshape(-1,1)]),(1,4))
     scale = ((0.5*et_ws)**2+(0.5*et_hs)**2)**0.5
-    deltas = (gt_3dTo2D-center)/scale.reshape(-1,1)
-    
+    deltas = (gt_3dTo2D[:,:8]-center)/scale.reshape(-1,1)
     return deltas
 
 def box_transform_3dTo2D_inv(et_boxes,targets_3dTo2Ds):
     num=len(et_boxes)
-    points_3dTo2D=np.zeros((num,16),dtype=np.int32) 
+    points_3dTo2D=np.zeros((num,8),dtype=np.int32) 
     et_ws  = et_boxes[:, 2] - et_boxes[:, 0] + 1.0
     et_hs  = et_boxes[:, 3] - et_boxes[:, 1] + 1.0
     c_xs   = (et_boxes[:, 2] + et_boxes[:, 0])/2
     c_ys   = (et_boxes[:, 3] + et_boxes[:, 1])/2
-    center= np.tile(np.hstack([c_xs.reshape(-1,1),c_ys.reshape(-1,1)]),(1,8))
+    center= np.tile(np.hstack([c_xs.reshape(-1,1),c_ys.reshape(-1,1)]),(1,4))
     scale = ((0.5*et_ws)**2+(0.5*et_hs)**2)**0.5
     points_3dTo2D=targets_3dTo2Ds*scale.reshape(-1,1)+center
-    return points_3dTo2D.reshape(-1,8,2).astype(np.int32)
+    return points_3dTo2D.reshape(-1,4,2).astype(np.int32)
 
 def box3d_transform_inv(et_boxes3d, deltas):
 

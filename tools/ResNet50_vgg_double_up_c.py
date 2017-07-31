@@ -14,11 +14,11 @@ from tensorflow.contrib.slim.python.slim.nets import resnet_v1
 import vgg
 from fpn import build_pyramid
 
-# keep_prob=0.5
+keep_prob=0.5
 # nms_pre_topn_=5000
 # nms_post_topn_=2000
 
-keep_prob=1
+# keep_prob=1
 # nms_pre_topn_=2000
 # nms_post_topn_=300
 
@@ -189,9 +189,9 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
       block3D_1 = tf.nn.dropout(block3D, keep_prob, name='drop1')
       block = linear_bn_relu(block3D_1, num_hiddens=512, name='3D')
       # block = tf.nn.dropout(block, keep_prob, name='drop4')
-      dim = np.product(16)
+      dim = np.product(8)
       deltas_2d  = linear(block, num_hiddens=dim*num_class, name='box')
-      deltas_2d  = tf.reshape(deltas_2d,(-1,num_class,16))
+      deltas_2d  = tf.reshape(deltas_2d,(-1,num_class,8))
     # scores_3d = tf.stop_gradient(scores_3d)
     # probs_3d = tf.stop_gradient(probs_3d)
     # deltas_3d = tf.stop_gradient(deltas_3d)

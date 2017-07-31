@@ -64,8 +64,8 @@ def load_dummy_datas(index):
     return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index#, lidars
 
 
-# train_data_root='/home/hhs/4T/datasets/2dTo3d_data'
-# kitti_dir='/mnt/disk_4T/KITTI/training'
+train_data_root='/home/users/hhs/4T/datasets/2dTo3d_data'
+kitti_dir='/mnt/disk_4T/KITTI/training'
 
 vis=0
 ohem=0
@@ -78,8 +78,8 @@ def run_train():
     makedirs(out_dir +'/log')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     # index=np.load(train_data_root+'/train_list.npy')
-    # index_file=open(train_data_root+'/train.txt')
-    index_file=open(train_data_root+'/val.txt')
+    index_file=open(train_data_root+'/train.txt')
+    # index_file=open(train_data_root+'/val.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
@@ -90,7 +90,7 @@ def run_train():
     if 1:
         ###generate anchor base 
         ratios_rgb=np.array([0.5,1,2], dtype=np.float32)
-        scales_rgb=np.array([1,2,4,5],   dtype=np.float32)
+        scales_rgb=np.array([0.5,1,2,4,5],   dtype=np.float32)
         bases_rgb = make_bases(
             base_size = 48,
             ratios=ratios_rgb,
@@ -98,7 +98,7 @@ def run_train():
         )
 
         num_bases_rgb = len(bases_rgb)
-        stride = 4
+        stride = 8
         out_shape=(2,2)
 
         rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[:3])
@@ -138,7 +138,7 @@ def run_train():
 
     fuse_labels  = tf.placeholder(shape=[None            ], dtype=tf.int32,   name='fuse_label' )
     fuse_targets = tf.placeholder(shape=[None, 4], dtype=tf.float32, name='fuse_target')
-    fuse_targets_3dTo2Ds = tf.placeholder(shape=[None, 16], dtype=tf.float32, name='fuse_target')
+    fuse_targets_3dTo2Ds = tf.placeholder(shape=[None, 8], dtype=tf.float32, name='fuse_target')
 
 
     fuse_cls_loss, fuse_reg_loss, fuse_reg_loss_3dTo2D = rcnn_loss_3dTo2D(fuse_scores, fuse_deltas, fuse_labels, fuse_targets, fuse_deltas_3dTo2D, fuse_targets_3dTo2Ds)
@@ -181,11 +181,15 @@ def run_train():
         # saver_1=tf.train.Saver(var_lt_vgg)
         # saver_1.restore(sess, './outputs/check_points/vgg_16.ckpt')
 
+        var_lt_res=[v for v in tf.global_variables() if  not v.name.startswith('fuse/3D')]
+        saver_0=tf.train.Saver(var_lt_res) 
+        saver_0.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
+
         batch_top_cls_loss =0
         batch_top_reg_loss =0
         batch_fuse_cls_loss=0
         batch_fuse_reg_loss=0
-        rate=0.0002
+        rate=0.00001
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
@@ -294,7 +298,7 @@ def run_train():
                 train_writer.add_summary(summary, iter)
             # save: ------------------------------------
             if (iter)%5000==0 and (iter!=0):
-                saver.save(sess, out_dir + '/check_points/snap_2dTo3D_%06d.ckpt'%iter)  #iter
+                saver.save(sess, out_dir + '/check_points/snap_2dTo2d_%06d.ckpt'%iter)  #iter
                 # saver.save(sess, out_dir + '/check_points/snap_R2R_new_resolution_%06d.ckpt'%iter)  #iter
 
                 pass
