@@ -370,7 +370,7 @@ def box2d_transform_inv(et_boxes, deltas):
 
 def box_transform_3dTo2D(et_boxes, gt_3dTo2D):
     num=len(et_boxes)
-    deltas=np.zeros((num,16),dtype=np.float32)
+    deltas=np.zeros((num,12),dtype=np.float32)
     et_ws  = et_boxes[:, 2] - et_boxes[:, 0] + 1.0
     et_hs  = et_boxes[:, 3] - et_boxes[:, 1] + 1.0
     c_xs   = (et_boxes[:, 2] + et_boxes[:, 0])/2
@@ -378,6 +378,7 @@ def box_transform_3dTo2D(et_boxes, gt_3dTo2D):
     center= np.tile(np.hstack([c_xs.reshape(-1,1),c_ys.reshape(-1,1)]),(1,8))
     scale = ((0.5*et_ws)**2+(0.5*et_hs)**2)**0.5
     deltas = (gt_3dTo2D-center)/scale.reshape(-1,1)
+    
     return deltas
 
 def box_transform_3dTo2D_inv(et_boxes,targets_3dTo2Ds):

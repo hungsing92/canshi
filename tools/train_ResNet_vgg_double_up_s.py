@@ -78,7 +78,8 @@ def run_train():
     makedirs(out_dir +'/log')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     # index=np.load(train_data_root+'/train_list.npy')
-    index_file=open(train_data_root+'/train.txt')
+    # index_file=open(train_data_root+'/train.txt')
+    index_file=open(train_data_root+'/val.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
@@ -170,15 +171,15 @@ def run_train():
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
         saver  = tf.train.Saver() 
-        # saver.restore(sess, './outputs/check_points/snap_R2R_new_fusesion_augment_pos_samples025000.ckpt') 
+        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train010000.ckpt') 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1')]#resnet_v1_50
         # saver_0=tf.train.Saver(var_lt_res)        
         # # saver_0.restore(sess, './outputs/check_points/resnet_v1_50.ckpt')
 
-        var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
-        saver_1=tf.train.Saver(var_lt_vgg)
-        saver_1.restore(sess, './outputs/check_points/vgg_16.ckpt')
+        # var_lt_vgg=[v for v in tf.trainable_variables() if v.name.startswith('vgg')]
+        # saver_1=tf.train.Saver(var_lt_vgg)
+        # saver_1.restore(sess, './outputs/check_points/vgg_16.ckpt')
 
         batch_top_cls_loss =0
         batch_top_reg_loss =0
