@@ -14,11 +14,11 @@ from tensorflow.contrib.slim.python.slim.nets import resnet_v1
 import vgg
 from fpn import build_pyramid
 
-# keep_prob=0.5
+keep_prob=0.5
 # nms_pre_topn_=5000
 # nms_post_topn_=2000
 
-keep_prob=0.5
+# keep_prob=1
 # nms_pre_topn_=2000
 # nms_post_topn_=300
 

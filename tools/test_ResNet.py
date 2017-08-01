@@ -166,8 +166,8 @@ def run_test():
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
 
     # index=np.load(train_data_root+'/train.npy')
-    # index_file=open(train_data_root+'/val.txt')
-    index_file=open(train_data_root+'/train.txt')
+    index_file=open(train_data_root+'/val.txt')
+    # index_file=open(train_data_root+'/train.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
 
@@ -236,7 +236,7 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train010000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D_010000.ckpt')
         # 
         # # pdb.set_trace()
         # var_lt_res=[v for v in tf.global_variables() if not v.name.startswith('fuse/3D')]
@@ -267,7 +267,7 @@ def run_test():
                 # idx=idx+1
                 # pdb.set_trace()
                 cv2.waitKey(0)
-                # continue
+                # continue  
             ## run propsal generation ------------
             fd1={
 
@@ -278,6 +278,9 @@ def run_test():
                 IS_TRAIN_PHASE:  False
             }
             batch_rgb_probs, batch_deltas, batch_rgb_features = sess.run([rgb_probs, rgb_deltas, rgb_features],fd1)
+
+            rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
+            anchors_rgb, inside_inds_rgb =  make_anchors(bases_rgb, stride, rgb_shape[0:2], rgb_feature_shape[0:2])
                         # pdb.set_trace()
             nms_pre_topn_=2000
             nms_post_topn_=300  
@@ -318,8 +321,9 @@ def run_test():
                 img_rgb_2d_detection = draw_boxes(rgb, boxes2d, color=(255,0,255), thickness=1)
                 imshow('draw_rcnn_nms',img_rcnn_nms)
                 imshow('img_rgb_2d_detection',img_rgb_2d_detection)
+                # cv2.imwrite(out_dir+'/demo_result_train_set'+'/rgb_%05d.png'%index[iter],img_rcnn_nms)
 
-                cv2.waitKey(0)
+                cv2.waitKey(20)
                 # plt.pause(0.25)
                 # mlab.clf(mfig)
 

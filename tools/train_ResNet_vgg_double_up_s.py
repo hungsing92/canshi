@@ -79,6 +79,7 @@ def run_train():
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     # index=np.load(train_data_root+'/train_list.npy')
     index_file=open(train_data_root+'/train.txt')
+    # index_file=open(train_data_root+'/val.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
     index=sorted(index)
@@ -153,7 +154,7 @@ def run_train():
     tf.summary.scalar('l2', l2)
     learning_rate = tf.placeholder(tf.float32, shape=[])
     solver = tf.train.AdamOptimizer(learning_rate)
-    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+0.5*fuse_reg_loss+0.5*fuse_reg_loss_3dTo2D+l2)
+    solver_step = solver.minimize(2*rgb_cls_loss+1*rgb_reg_loss+2*fuse_cls_loss+1*fuse_reg_loss+2*fuse_reg_loss_3dTo2D+l2)
 
     max_iter = 200000
     iter_debug=1
@@ -170,7 +171,11 @@ def run_train():
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
         saver  = tf.train.Saver() 
-        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train010000.ckpt') 
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D_010000.ckpt') 
+
+        # var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
+        # saver_0=tf.train.Saver(var_lt_res) 
+        # saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1')]#resnet_v1_50
         # saver_0=tf.train.Saver(var_lt_res)        
@@ -184,7 +189,7 @@ def run_train():
         batch_top_reg_loss =0
         batch_fuse_cls_loss=0
         batch_fuse_reg_loss=0
-        rate=0.00004
+        rate=0.00002
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
@@ -245,6 +250,9 @@ def run_train():
 
             }
             batch_rgb_probs, batch_deltas, batch_rgb_features = sess.run([rgb_probs, rgb_deltas, rgb_features],fd1) 
+
+            rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
+            anchors_rgb, inside_inds_rgb =  make_anchors(bases_rgb, stride, rgb_shape[0:2], rgb_feature_shape[0:2])
 
             nms_pre_topn_=5000
             nms_post_topn_=2000  
