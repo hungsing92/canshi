@@ -98,17 +98,17 @@ def data_augmentation(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label):
 	if np.random.randint(5)==0:
 		rgb = rgb*0.7
 		rgbs_norm0 = rgbs_norm0*0.7
-	rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, 2)
-	return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label
-	
-	# randInt = np.random.randint(11)
-	# if randInt<=6:
-	# 	rgb, rgbs_norm0, gt_3dTo2D, gt_box2d= change_scale(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d,randInt)
-	# else:
-	# 	randInt = randInt-7
-	# 	rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, randInt)
-	# randInt = np.random.randint(2)
-	# if randInt==1:
-	# 	rgb, rgbs_norm0, gt_3dTo2D, gt_box2d= flipper(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d)
-
+	# rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, 2)
 	# return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label
+	
+	randInt = np.random.randint(11)
+	if randInt<=6:
+		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d= change_scale(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d,randInt)
+	else:
+		randInt = randInt-7
+		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, randInt)
+	randInt = np.random.randint(2)
+	if randInt==1:
+		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d= flipper(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d)
+
+	return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label
