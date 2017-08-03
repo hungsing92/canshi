@@ -66,8 +66,8 @@ def load_dummy_datas(index):
     return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index#, lidars
 
 
-# train_data_root='/home/users/hhs/4T/datasets/2dTo3d_data' 
-# kitti_dir='/mnt/disk_4T/KITTI/training'
+train_data_root='/home/users/hhs/4T/datasets/2dTo3d_data' 
+kitti_dir='/mnt/disk_4T/KITTI/training'
 
 vis=0
 ohem=0
@@ -160,7 +160,7 @@ def run_train():
 
     max_iter = 200000
     iter_debug=1
-
+# 
     # start training here  #########################################################################################
     log.write('epoch     iter    speed   rate   |  top_cls_loss   reg_loss   |  fuse_cls_loss  reg_loss  |  \n')
     log.write('-------------------------------------------------------------------------------------\n')
