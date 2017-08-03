@@ -173,11 +173,11 @@ def run_train():
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
         saver  = tf.train.Saver() 
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation125000.ckpt') 
+        # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation125000.ckpt') 
 
-        # var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
-        # saver_0=tf.train.Saver(var_lt_res) 
-        # saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
+        var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
+        saver_0=tf.train.Saver(var_lt_res) 
+        saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1')]#resnet_v1_50
         # saver_0=tf.train.Saver(var_lt_res)        
