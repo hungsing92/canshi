@@ -33,6 +33,59 @@ def project_velo2rgb(velo,Tr,R0,P2):
 		projections[i] = box2d
 	return projections
 
+def project_cam2rgb(velo,Tr,R0,P2):
+	T=np.zeros([4,4],dtype=np.float32)
+	T[:3,:]=Tr
+	T[3,3]=1
+	R=np.zeros([4,4],dtype=np.float32)
+	R[:3,:3]=R0
+	R[3,3]=1
+	num=len(velo)
+	projections = np.zeros((num,8,2),  dtype=np.int32)
+	for i in range(len(velo)):
+		box3d=np.ones([8,4],dtype=np.float32)
+		box3d[:,:3]=velo[i]
+		M=np.dot(P2,R)
+		# M=np.dot(M,T)
+		box2d=np.dot(M,box3d.T)
+		box2d=box2d[:2,:].T/box2d[2,:].reshape(8,1)
+		projections[i] = box2d
+	return projections
+
+def box3D_calib(box3d, box2d,ry,flag=0):
+	box3d_project=project_velo2rgb([box3d],Tr,R0,P2)
+	# pdb.set_trace()
+	if ((box3d_project[0][0,0]<x1) and (box3d_project[0][3,0]>x1)) or ((box3d_project[0][2,0]<x1 ) and (box3d_project[0][1,0]>x1)):
+		if flag>0:
+			return box3d
+		flag=-1
+		ry = ry +(-0.1/180*np.pi)
+		rotMat = np.array([\
+	         [np.cos(ry), +np.sin(ry), 0.0], \
+	         [-np.sin(ry),  np.cos(ry), 0.0], \
+	         [        0.0,          0.0, 1.0]])
+		velo_box = np.dot(rotMat, Box)
+		cornerPosInCam = velo_box + np.tile(t_lidar, (8,1)).T
+		box3d=cornerPosInCam.transpose()
+
+	elif ((box3d_project[0][3,0]<x1) and (box3d_project[0][0,0]>x1) ) or ((box3d_project[0][1,0]<x1)  and (box3d_project[0][2,0]>x1)):
+		if flag<0:
+			return box3d
+		flag=1
+		ry = ry +(0.1/180*np.pi)
+		rotMat = np.array([\
+	         [np.cos(ry), +np.sin(ry), 0.0], \
+	         [-np.sin(ry),  np.cos(ry), 0.0], \
+	         [        0.0,          0.0, 1.0]])
+		velo_box = np.dot(rotMat, Box)
+		cornerPosInCam = velo_box + np.tile(t_lidar, (8,1)).T
+		box3d=cornerPosInCam.transpose()			
+	else:
+		return box3d
+	# pdb.set_trace()
+	box3d=box3D_calib(box3d, box2d,ry,flag)
+
+	return box3d
 def load_kitti_calib(calib_path,index):
     """
     load projection matrix
@@ -83,15 +136,15 @@ gt_boxes2d_path = train_data_root + '/gt_boxes2d'
 gt_labels_path = train_data_root + '/gt_labels'
 gt_3dTo2D_path = train_data_root + '/gt_3dTo2D'
 
-empty(gt_boxes3d_path)
-empty(gt_boxes2d_path)
-empty(gt_labels_path)
-empty(gt_3dTo2D_path)
+# empty(gt_boxes3d_path)
+# empty(gt_boxes2d_path)
+# empty(gt_labels_path)
+# empty(gt_3dTo2D_path)
 
-makedirs(gt_boxes3d_path)
-makedirs(gt_boxes2d_path)
-makedirs(gt_labels_path)
-makedirs(gt_3dTo2D_path)
+# makedirs(gt_boxes3d_path)
+# makedirs(gt_boxes2d_path)
+# makedirs(gt_labels_path)
+# makedirs(gt_3dTo2D_path)
 
 width = []
 length = []
@@ -140,6 +193,9 @@ for i in range(7481):
 		tz = float(obj[13])
 		ry = float(obj[14])
 
+		# pdb.set_trace()
+		
+
 		width.append(w)
 		length.append(l)
 		ratio.append(w/l)
@@ -148,6 +204,7 @@ for i in range(7481):
 		cam[1]=ty
 		cam[2]=tz
 		t_lidar=project_cam2velo(cam,Tr)
+
 		Box = np.array([ # in velodyne coordinates around zero point and without orientation yet\
 	        [ w/2, -w/2, -w/2, w/2,  w/2, -w/2, -w/2, w/2], \
 	        [ l/2, l/2,  -l/2, -l/2, l/2, l/2,  -l/2, -l/2], \
@@ -156,10 +213,13 @@ for i in range(7481):
 	          [np.cos(ry), +np.sin(ry), 0.0], \
 	          [-np.sin(ry),  np.cos(ry), 0.0], \
 	          [        0.0,          0.0, 1.0]])
-
-		cornerPosInVelo = np.dot(rotMat, Box) + np.tile(t_lidar, (8,1)).T
-		box3d=cornerPosInVelo.transpose()
+		velo_box = np.dot(rotMat, Box)
+		cornerPosInCam = velo_box + np.tile(t_lidar, (8,1)).T
+		box3d=cornerPosInCam.transpose()
 		box2d=np.array([x1, y1, x2, y2])
+		if ry>0.95*0.5*np.pi or ry<-0.98*0.5*np.pi:
+			pass
+			# box3d=box3D_calib(box3d, box2d,ry,0)
 
 		# rgb_boxes=project_to_rgb_roi([box3d], image.shape[1], image.shape[0])
 		# line='Car %.2f %d -10 %.2f %.2f %.2f %.2f -1 -1 -1 -1000 -1000 -1000 -10 %.2f\n'%(truncated, occluded, rgb_boxes[0][1], rgb_boxes[0][2], rgb_boxes[0][3], rgb_boxes[0][4], 1)
@@ -175,19 +235,20 @@ for i in range(7481):
 
 	gt_3dTo2D=project_velo2rgb(gt_boxes3d,Tr,R0,P2)
 
-	# img_rcnn_nms = draw_rgb_projections(image, gt_3dTo2D, color=(0,0,255), thickness=1)
-	# imshow('draw_rcnn_nms',img_rcnn_nms)
-	# cv2.waitKey(0)
+	img_rcnn_nms = draw_rgb_projections(image, gt_3dTo2D, color=(0,0,255), thickness=1)
+	# img_rcnn_nms = draw_boxes(img_rcnn_nms,gt_boxes2d, color=(255,0,255), thickness=1)
+	imshow('draw_rcnn_nms',img_rcnn_nms)
+	cv2.waitKey(0)
 
 
 	# pdb.set_trace()
 	# if len(gt_labels) == 0:
 	# 	continue
 	# file.close()
-	gt_boxes3d = np.array(gt_boxes3d,dtype=np.float32)
-	gt_boxes2d = np.array(gt_boxes2d,dtype=np.float32)
+	gt_boxes3d = np.array(gt_boxes3d,dtype=np.int32)
+	gt_boxes2d = np.array(gt_boxes2d,dtype=np.int32)
 	gt_labels  = np.array(gt_labels ,dtype=np.uint8)
-	gt_3dTo2D = np.array(gt_3dTo2D)
+	gt_3dTo2D = np.array(gt_3dTo2D,dtype=np.int32)
 	
 # plt.hist(width,50,normed=1,facecolor='g',alpha=0.75)
 # plt.grid(True)
@@ -219,24 +280,25 @@ for i in range(7481):
 # ax.set_zlabel('Z Axis')
 # plt.show()
 
-	np.save(gt_boxes3d_path+'/gt_boxes3d_%05d.npy'%i,gt_boxes3d)
-	np.save(gt_boxes2d_path+'/gt_boxes2d_%05d.npy'%i,gt_boxes2d)
-	np.save(gt_labels_path+'/gt_labels_%05d.npy'%i,gt_labels)
-	np.save(gt_3dTo2D_path+'/gt_3dTo2D_%05d.npy'%i,gt_3dTo2D)
+	# np.save(gt_boxes3d_path+'/gt_boxes3d_%05d.npy'%i,gt_boxes3d)
+	# np.save(gt_boxes2d_path+'/gt_boxes2d_%05d.npy'%i,gt_boxes2d)
+	# np.save(gt_labels_path+'/gt_labels_%05d.npy'%i,gt_labels)
+	# np.save(gt_3dTo2D_path+'/gt_3dTo2D_%05d.npy'%i,gt_3dTo2D)
 
 
 # #Generate train and val list
 # #3DOP train val list http://www.cs.toronto.edu/objprop3d/data/ImageSets.tar.gz
-files_list=glob.glob(gt_labels_path+"/gt_labels_*.npy")
-index=np.array([file_index.strip().split('_')[-1].split('.')[0] for file_index in files_list ])
-num_frames=len(files_list)
-train_num=int(np.round(num_frames*0.7))
-random_index=np.random.permutation(index)
-train_list=random_index[:train_num]
-val_list=random_index[train_num:]
-np.save(train_data_root+'/train.npy',train_list)
-np.save(train_data_root+'/val.npy',val_list)
-np.save(train_data_root+'/train_val.npy',random_index)
+
+# files_list=glob.glob(gt_labels_path+"/gt_labels_*.npy")
+# index=np.array([file_index.strip().split('_')[-1].split('.')[0] for file_index in files_list ])
+# num_frames=len(files_list)
+# train_num=int(np.round(num_frames*0.7))
+# random_index=np.random.permutation(index)
+# train_list=random_index[:train_num]
+# val_list=random_index[train_num:]
+# np.save(train_data_root+'/train.npy',train_list)
+# np.save(train_data_root+'/val.npy',val_list)
+# np.save(train_data_root+'/train_val.npy',random_index)
 
 
 

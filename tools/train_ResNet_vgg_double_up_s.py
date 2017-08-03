@@ -27,6 +27,7 @@ slim = tf.contrib.slim
 from ResNet50_vgg_double_up_c import *
 from tensorflow.python import debug as tf_debug
 from net.configuration import *
+from net.processing.data_augmentation import data_augmentation
 # os.environ["QT_API"] = "pyqt"
 
 #http://3dimage.ee.tsinghua.edu.cn/cxz
@@ -49,10 +50,11 @@ def load_dummy_datas(index):
         print('processing img:%d,%05d'%(n,int(index[n])))
         rgb   = cv2.imread(kitti_dir+'/image_2/%06d.png'%int(index[n]))
         rgbs_norm0=(rgb-PIXEL_MEANS)/255
-
         gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index[n]))
         gt_3dTo2D = np.load(train_data_root+'/gt_3dTo2D/gt_3dTo2D_%05d.npy'%int(index[n]))
         gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%05d.npy'%int(index[n]))
+
+        rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = data_augmentation(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label)
 
         rgbs.append(rgb)
         gt_labels.append(gt_label)
@@ -78,7 +80,7 @@ def run_train():
     makedirs(out_dir +'/log')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     # index=np.load(train_data_root+'/train_list.npy')
-    index_file=open(train_data_root+'/train.txt')
+    index_file=open(train_data_root+'/trainval.txt')
     # index_file=open(train_data_root+'/val.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
@@ -171,7 +173,7 @@ def run_train():
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
         saver  = tf.train.Saver() 
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D_010000.ckpt') 
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation125000.ckpt') 
 
         # var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
         # saver_0=tf.train.Saver(var_lt_res) 
@@ -189,7 +191,7 @@ def run_train():
         batch_top_reg_loss =0
         batch_fuse_cls_loss=0
         batch_fuse_reg_loss=0
-        rate=0.00002
+        rate=0.000025
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
@@ -224,7 +226,8 @@ def run_train():
             print('processing image : %s'%image_index[idx])
 
             if (iter+1)%(10000)==0:
-                rate=0.8*rate
+                rate=0.9*rate
+
 
             rgb_shape   = rgbs[idx].shape
             batch_rgb_images    = rgbs_norm[idx].reshape(1,*rgb_shape)
@@ -237,7 +240,9 @@ def run_train():
 
             batch_gt_3dTo2Ds   = gt_3dTo2Ds[idx]
             batch_gt_boxes2d   = gt_boxes2d[idx]
-            
+
+            rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
+            anchors_rgb, inside_inds_rgb =  make_anchors(bases_rgb, stride, rgb_shape[0:2], rgb_feature_shape[0:2])
             ## run propsal generation ------------
             fd1={
 
@@ -249,10 +254,10 @@ def run_train():
                 IS_TRAIN_PHASE:  True,
 
             }
+
             batch_rgb_probs, batch_deltas, batch_rgb_features = sess.run([rgb_probs, rgb_deltas, rgb_features],fd1) 
 
-            rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
-            anchors_rgb, inside_inds_rgb =  make_anchors(bases_rgb, stride, rgb_shape[0:2], rgb_feature_shape[0:2])
+
 
             nms_pre_topn_=5000
             nms_post_topn_=2000  
@@ -301,7 +306,7 @@ def run_train():
                 train_writer.add_summary(summary, iter)
             # save: ------------------------------------
             if (iter)%5000==0 and (iter!=0):
-                saver.save(sess, out_dir + '/check_points/snap_2dTo3D_%06d.ckpt'%iter)  #iter
+                saver.save(sess, out_dir + '/check_points/snap_2dTo3D__data_augmentation%06d.ckpt'%iter)  #iter
                 # saver.save(sess, out_dir + '/check_points/snap_R2R_new_resolution_%06d.ckpt'%iter)  #iter
 
                 pass

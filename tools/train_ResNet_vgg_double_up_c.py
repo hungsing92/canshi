@@ -26,6 +26,7 @@ slim = tf.contrib.slim
 
 from ResNet50_vgg_double_up_c import *
 from tensorflow.python import debug as tf_debug
+from net.processing.data_augmentation import data_augmentation
 # os.environ["QT_API"] = "pyqt"
 
 #http://3dimage.ee.tsinghua.edu.cn/cxz
@@ -58,7 +59,8 @@ def load_dummy_datas(index):
         gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index[n]))
         gt_3dTo2D = np.load(train_data_root+'/gt_3dTo2D/gt_3dTo2D_%05d.npy'%int(index[n]))
         gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%05d.npy'%int(index[n]))        
-
+        if len(gt_box2d)>0 :
+            rgb, rgbs_norm0, gt_3dTo2D, gt_box2d ,gt_label= data_augmentation(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label)
 
         rgbs.append(rgb)
         gt_labels.append(gt_label)
@@ -94,7 +96,7 @@ def load_dummy_datas(index):
 # index = [ int(i.strip()) for i in index_list]
 # print ('length of index : %d'%len(index))
 MM_PER_VIEW1 = 180, 70, 30, [1,1,0]
-vis=0
+vis=1
 # ohem=1
 def run_train():
 
@@ -133,10 +135,10 @@ def run_train():
         # rgbs, tops, fronts, gt_labels, gt_boxes3d, top_imgs, front_imgs, rgbs_norm, image_index, lidars = load_dummy_datas()
 
         rgb_shape   = rgbs[0].shape
-        rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
+
         # set anchor boxes
         num_class = 2 #incude background
-        anchors_rgb, inside_inds_rgb =  make_anchors(bases_rgb, stride, rgb_shape[0:2], rgb_feature_shape[0:2])
+
         # pdb.set_trace()
 
     #load model ####################################################################################################
@@ -203,7 +205,7 @@ def run_train():
         # summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver() 
 
-        saver.restore(sess, './outputs/check_points/V_2dTo3d_2d_detection_train005000.ckpt') 
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D_030000.ckpt') 
 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1_50')]#resnet_v1_50
@@ -268,10 +270,16 @@ def run_train():
             # batch_rgb_images    = rgbs[idx].reshape(1,*rgb_shape)
 
             batch_gt_labels    = gt_labels[idx]
+
+
+            
             if len(batch_gt_labels)==0:
                 # pdb.set_trace()
                 idx=idx+1
                 continue
+
+            rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
+            anchors_rgb, inside_inds_rgb =  make_anchors(bases_rgb, stride, rgb_shape[0:2], rgb_feature_shape[0:2])
 
             batch_gt_3dTo2Ds   = gt_3dTo2Ds[idx]
             batch_gt_boxes2d   = gt_boxes2d[idx]
@@ -289,6 +297,9 @@ def run_train():
             }
             batch_rgb_probs, batch_deltas, batch_rgb_features = sess.run([rgb_probs, rgb_deltas, rgb_features],fd1) 
 
+
+
+
             nms_pre_topn_=5000
             nms_post_topn_=2000  
             img_scale=1
@@ -299,11 +310,10 @@ def run_train():
             ## generate  train rois  ------------
             batch_rgb_inds, batch_rgb_pos_inds, batch_rgb_labels, batch_rgb_targets  = \
                 rpn_target ( anchors_rgb, inside_inds_rgb, batch_gt_labels,  batch_gt_boxes2d)
+
             batch_rgb_rois, batch_fuse_labels, batch_fuse_targets2d, batch_fuse_targets_3dTo2Ds = rcnn_target_3dTo2D(batch_proposals, batch_gt_labels, batch_gt_boxes2d, batch_gt_3dTo2Ds, rgb_shape[1], rgb_shape[0])
             # pdb.set_trace()
             #      rcnn_target(  batch_proposals, batch_gt_labels, batch_gt_top_boxes, batch_gt_boxes3d )
-
-            batch_rgb_rois, batch_fuse_labels, batch_fuse_targets2d, batch_fuse_targets_3dTo2Ds = rcnn_target_3dTo2D(batch_proposals, batch_gt_labels, batch_gt_boxes2d, batch_gt_3dTo2Ds, rgb_shape[1], rgb_shape[0])
 
 
             print('nums of rcnn batch: %d'%len(batch_rgb_rois))
@@ -331,7 +341,7 @@ def run_train():
                 imshow('img_rcnn_3dTo2D',img_rcnn_3dTo2D)
                 # plt.pause(0.5)
                 # cv2.waitKey(500)
-                cv2.waitKey(20)
+                cv2.waitKey(0)
 
             ## run classification and regression loss -----------
             fd2={

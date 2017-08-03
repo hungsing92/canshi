@@ -114,16 +114,24 @@ def load_dummy_datas(index):
     gt_boxes2d=[]
     rgbs_norm =[]
 
-    rgb   = cv2.imread(kitti_dir+'/image_2/%06d.png'%int(index),1).astype(np.float32, copy=False)
+    rgb   = cv2.imread(kitti_dir+'/%05d.png'%int(index),1).astype(np.float32, copy=False)
+    rgb=rgb[432:,:]
+    rgb_shape = rgb.shape
+    resize_scale=0.6
+
+    rgb = cv2.resize(rgb,(int(rgb_shape[1]*resize_scale), int(rgb_shape[0]*resize_scale)))
     rgbs_norm0=(rgb-PIXEL_MEANS)/255
-    gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index))
-    gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%05d.npy'%int(index))
-    gt_3dTo2D = np.load(train_data_root+'/gt_3dTo2D/gt_3dTo2D_%05d.npy'%int(index))
+
+    # rgb = np.minimum(rgb*1.5,255)
+    # rgbs_norm0 =np.minimum( rgbs_norm0*1.5,255)
+    # gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index))
+    # gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%05d.npy'%int(index))
+    # gt_3dTo2D = np.load(train_data_root+'/gt_3dTo2D/gt_3dTo2D_%05d.npy'%int(index))
 
     rgbs.append(rgb)
-    gt_labels.append(gt_label)
-    gt_boxes2d.append(gt_box2d)
-    gt_3dTo2Ds.append(gt_3dTo2D)
+    # gt_labels.append(gt_label)
+    # gt_boxes2d.append(gt_box2d)
+    # gt_3dTo2Ds.append(gt_3dTo2D)
     rgbs_norm.append(rgbs_norm0)
     # explore dataset:
     # print (gt_box3d)
@@ -156,7 +164,15 @@ is_show=1
 MM_PER_VIEW1 = 180, 70, 60, [1,1,0]#[ 12.0909996 , -1.04700089, -2.03249991]
 
 # train_data_root='/home/users/hhs/4T/datasets/dummy_datas/seg'
-# kitti_dir='/mnt/disk_4T/KITTI/training'
+kitti_dir='/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/2016_0306_110310_227'
+
+# kitti_dir='/home/hhs/4T/datasets/Last_14000/Raw_Images'
+
+save_path = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/'+'result_crop_'+'2016_0306_110310_227'
+
+empty(save_path)
+makedirs(save_path)
+
 def run_test():
 
     # output dir, etc
@@ -166,15 +182,23 @@ def run_test():
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
 
     # index=np.load(train_data_root+'/train.npy')
-    index_file=open(train_data_root+'/val.txt')
-    # index_file=open(train_data_root+'/train.txt')
-    index = [ int(i.strip()) for i in index_file]
-    index_file.close()
+    # index_file=open(train_data_root+'/val.txt')
+    # # index_file=open(train_data_root+'/train.txt')
+    # index = [ int(i.strip()) for i in index_file]
+    # index_file.close()
 
+    # index=sorted(index)
+
+    # print('len(index):%d'%len(index))
+    # num_frames=len(index)
+
+    files_list=glob.glob(kitti_dir+"/*.png")
+    index=np.array([int(file_index.strip().split('/')[-1].split('.')[0]) for file_index in files_list ])
     index=sorted(index)
-
     print('len(index):%d'%len(index))
     num_frames=len(index)
+    # pdb.set_trace()
+
     #lidar data -----------------
     if 1:
         ratios_rgb=np.array([0.5,1,2], dtype=np.float32)
@@ -236,7 +260,7 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation125000.ckpt')
         # 
         # # pdb.set_trace()
         # var_lt_res=[v for v in tf.global_variables() if not v.name.startswith('fuse/3D')]
@@ -260,13 +284,13 @@ def run_test():
 
             batch_rgb_images    = rgbs_norm[idx].reshape(1,*rgb_shape)
 
-            batch_gt_labels    = gt_labels[idx]
-            batch_gt_3dTo2Ds   = gt_3dTo2Ds[idx]
-            batch_gt_boxes2d   = gt_boxes2d[idx]
-            if len(batch_gt_labels)==0:
-                # idx=idx+1
-                # pdb.set_trace()
-                cv2.waitKey(0)
+            # batch_gt_labels    = gt_labels[idx]
+            # batch_gt_3dTo2Ds   = gt_3dTo2Ds[idx]
+            # batch_gt_boxes2d   = gt_boxes2d[idx]
+            # if len(batch_gt_labels)==0:
+            #     # idx=idx+1
+            #     # pdb.set_trace()
+            #     cv2.waitKey(0)
                 # continue  
             ## run propsal generation ------------
             fd1={
@@ -313,17 +337,17 @@ def run_test():
                 rgb=rgbs[idx]
               
                 img_rpn_nms = draw_rpn_nms(rgb, batch_proposals, batch_proposal_scores)
-                img_gt     = draw_rpn_gt(rgb, batch_gt_boxes2d, batch_gt_labels)
-                imshow('img_gt',img_gt)
-                imshow('img_rpn_nms',img_rpn_nms)
+                # img_gt     = draw_rpn_gt(rgb, batch_gt_boxes2d, batch_gt_labels)
+                # imshow('img_gt',img_gt)
+                # imshow('img_rpn_nms',img_rpn_nms)
 
                 img_rcnn_nms = draw_rgb_projections(rgb, projections, color=(0,0,255), thickness=1)
                 img_rgb_2d_detection = draw_boxes(rgb, boxes2d, color=(255,0,255), thickness=1)
-                imshow('draw_rcnn_nms',img_rcnn_nms)
-                imshow('img_rgb_2d_detection',img_rgb_2d_detection)
-                # cv2.imwrite(out_dir+'/demo_result_train_set'+'/rgb_%05d.png'%index[iter],img_rcnn_nms)
+                # imshow('draw_rcnn_nms',img_rcnn_nms)
+                # imshow('img_rgb_2d_detection',img_rgb_2d_detection)
+                cv2.imwrite(save_path+'/%05d.png'%index[iter],img_rcnn_nms)
 
-                cv2.waitKey(0)
+                # cv2.waitKey(0)
                 # plt.pause(0.25)
                 # mlab.clf(mfig)
 
@@ -332,5 +356,4 @@ def run_test():
 
 if __name__ == '__main__':
     print( '%s: calling main function ... ' % os.path.basename(__file__))
-    ##run_train()
     run_test()

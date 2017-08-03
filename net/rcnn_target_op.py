@@ -128,9 +128,9 @@ def draw_rcnn_labels(image, rois,  labels, darker=0.7):
     is_print=0
 
     ## draw +ve/-ve labels ......
-    boxes = rois[:,1:5]
+    boxes = rois[:,1:5].astype(np.int32)
     labels = labels.reshape(-1)
-
+    # pdb.set_trace()
     fg_label_inds = np.where(labels != 0)[0]
     bg_label_inds = np.where(labels == 0)[0]
     num_pos_label = len(fg_label_inds)
@@ -155,7 +155,7 @@ def draw_rcnn_targets(image, rois, labels,  targets, darker=0.7):
     is_print=1
 
     #draw +ve targets ......
-    boxes = rois[:,1:5]
+    boxes = rois[:,1:5].astype(np.int32)
 
     fg_target_inds = np.where(labels != 0)[0]
     num_pos_target = len(fg_target_inds)
@@ -170,13 +170,13 @@ def draw_rcnn_targets(image, rois, labels,  targets, darker=0.7):
             t = targets[n]
             # b = box_transform_inv(a.reshape(1,4), t.reshape(1,4))
             b = box2d_transform_inv(a.reshape(1,4), t.reshape(1,4))
-            b = b.reshape(4)
+            b = b.reshape(4).astype(np.int32)
             cv2.rectangle(img_target,(b[0], b[1]), (b[2], b[3]), (255,255,255), 1)
 
         if targets.shape[1:]==(8,3):
             t = targets[n]
             a3d = top_box_to_box3d(a.reshape(1,4))
-            b3d = box3d_transform_inv(a3d, t.reshape(1,8,3))
+            b3d = box3d_transform_inv(a3d, t.reshape(1,8,3)).astype(np.int32)
             #b3d = b3d.reshape(1,8,3)
             img_target = draw_box3d_on_top(img_target, b3d, darken=1)
 
