@@ -29,12 +29,12 @@ def flipper(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d):
 	return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d
 
 def regular_2d_box(gt_box2d, width, height):
-
-	gt_box2d[:,0] = np.maximum(np.minimum(gt_box2d[:,0], width - 1), 0)
-	gt_box2d[:,2] = np.maximum(np.minimum(gt_box2d[:,2], width - 1), 0)
-	gt_box2d[:,1] = np.maximum(np.minimum(gt_box2d[:,1], height - 1), 0)
-	gt_box2d[:,3] = np.maximum(np.minimum(gt_box2d[:,3], height - 1), 0)
-	return gt_box2d
+	gt_box2d_= gt_box2d.copy()
+	gt_box2d_[:,0] = np.maximum(np.minimum(gt_box2d_[:,0], width - 1), 0)
+	gt_box2d_[:,2] = np.maximum(np.minimum(gt_box2d_[:,2], width - 1), 0)
+	gt_box2d_[:,1] = np.maximum(np.minimum(gt_box2d_[:,1], height - 1), 0)
+	gt_box2d_[:,3] = np.maximum(np.minimum(gt_box2d_[:,3], height - 1), 0)
+	return gt_box2d_
 
 def crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, scale = 0):
 
@@ -59,8 +59,8 @@ def crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, scale = 0):
 		gt_box2d[:,1] = gt_box2d[:,1] - height*crop_scale
 		gt_box2d[:,3] = gt_box2d[:,3] - height*crop_scale
 
-		gt_box2d=regular_2d_box(gt_box2d, crop_width, crop_height)
-		area2 = (gt_box2d[:,2]- gt_box2d[:,0])*(gt_box2d[:,3]-gt_box2d[:,1])
+		gt_box2d_=regular_2d_box(gt_box2d, crop_width, crop_height)
+		area2 = (gt_box2d_[:,2]- gt_box2d_[:,0])*(gt_box2d_[:,3]-gt_box2d_[:,1])
 		keep = np.where(area2>area*0.15)[0]
 		gt_3dTo2D = gt_3dTo2D[keep]		
 		gt_box2d =  gt_box2d[keep]
