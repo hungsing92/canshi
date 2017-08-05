@@ -66,8 +66,8 @@ def load_dummy_datas(index):
     return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index#, lidars
 
 
-train_data_root='/home/users/hhs/4T/datasets/2dTo3d_data' 
-kitti_dir='/mnt/disk_4T/KITTI/training'
+# train_data_root='/home/users/hhs/4T/datasets/2dTo3d_data' 
+# kitti_dir='/mnt/disk_4T/KITTI/training'
 
 vis=0
 ohem=0
@@ -80,7 +80,7 @@ def run_train():
     makedirs(out_dir +'/log')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
     # index=np.load(train_data_root+'/train_list.npy')
-    index_file=open(train_data_root+'/trainval.txt')
+    index_file=open(train_data_root+'/val.txt')
     # index_file=open(train_data_root+'/val.txt')
     index = [ int(i.strip()) for i in index_file]
     index_file.close()
@@ -168,16 +168,18 @@ def run_train():
     merged = tf.summary.merge_all()
 
     sess = tf.InteractiveSession()
-    train_writer = tf.summary.FileWriter( './outputs/tensorboard/R_2dTo3d_finetune',
+    train_writer = tf.summary.FileWriter( './outputs/tensorboard/R_2dTo3d_val_08_04',
                                       sess.graph)
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
         saver  = tf.train.Saver() 
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation125000.ckpt') 
+        # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000trainval.ckpt') 
+        # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation_crop030000.ckpt') 
+        
 
-        # var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
-        # saver_0=tf.train.Saver(var_lt_res) 
-        # saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
+        var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
+        saver_0=tf.train.Saver(var_lt_res) 
+        saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1')]#resnet_v1_50
         # saver_0=tf.train.Saver(var_lt_res)        
@@ -191,7 +193,7 @@ def run_train():
         batch_top_reg_loss =0
         batch_fuse_cls_loss=0
         batch_fuse_reg_loss=0
-        rate=0.000025
+        rate=0.00005
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
@@ -306,7 +308,7 @@ def run_train():
                 train_writer.add_summary(summary, iter)
             # save: ------------------------------------
             if (iter)%5000==0 and (iter!=0):
-                saver.save(sess, out_dir + '/check_points/snap_2dTo3D__data_augmentation%06d.ckpt'%iter)  #iter
+                saver.save(sess, out_dir + '/check_points/snap_2dTo3D_val_%06d.ckpt'%iter)  #iter
                 # saver.save(sess, out_dir + '/check_points/snap_R2R_new_resolution_%06d.ckpt'%iter)  #iter
 
                 pass

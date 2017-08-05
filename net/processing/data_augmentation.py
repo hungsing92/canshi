@@ -5,7 +5,7 @@ from net.processing.boxes3d import *
 
 def change_scale(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, scale=0):
 
-	scales=[  1, 1, 0.5,0.7, 0.8, 1.2, 1.6]
+	scales=[ 0.5,0.7, 0.8, 1.2, 1.6]
 	if scales[scale]==1:
 		return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d
 	print('Scale ratio : %f'%scales[scale])
@@ -38,7 +38,7 @@ def regular_2d_box(gt_box2d, width, height):
 
 def crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, scale = 0):
 
-	scales=[0.1, 0.15, 0.2, 0.25]
+	scales=[0.1, 0.15, 0.2,0.25]
 	crop_scale = scales[scale]
 	print('Crop_scale: %f'%crop_scale)
 	width = rgb.shape[1]
@@ -78,6 +78,7 @@ def crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, scale = 0):
 		gt_3dTo2D[:,:,1] = gt_3dTo2D[:,:,1] - height*crop_scale
 
 		if np.random.randint(2):
+		# if 1:
 			print('crop and resize')
 			rgb = cv2.resize(rgb,(int(width), int(height)))
 			rgbs_norm0 = cv2.resize(rgbs_norm0,(int(width), int(height)))
@@ -95,20 +96,25 @@ def crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, scale = 0):
 def data_augmentation(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label):
 	if len(gt_box2d)==0:
 		return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label
+
 	if np.random.randint(5)==0:
 		rgb = rgb*0.7
 		rgbs_norm0 = rgbs_norm0*0.7
 	# rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, 2)
 	# return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label
 	
-	randInt = np.random.randint(11)
-	if randInt<=6:
+	randInt = np.random.randint(6)
+	if randInt==0:
+		randInt = np.random.randint(5)
 		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d= change_scale(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d,randInt)
-	else:
-		randInt = randInt-7
+	elif randInt ==1:
+		randInt = np.random.randint(4)
 		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, randInt)
+	else:
+		pass
 	randInt = np.random.randint(2)
 	if randInt==1:
 		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d= flipper(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d)
 
 	return rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label
+ 
