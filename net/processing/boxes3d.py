@@ -368,6 +368,7 @@ def box2d_transform_inv(et_boxes, deltas):
     boxes2d = deltas*scale.reshape(-1,1)+et_boxes
     return boxes2d
 
+
 def box_transform_3dTo2D(et_boxes, gt_3dTo2D):
     num=len(et_boxes)
     deltas=np.zeros((num,16),dtype=np.float32)
@@ -391,6 +392,39 @@ def box_transform_3dTo2D_inv(et_boxes,targets_3dTo2Ds):
     scale = ((0.5*et_ws)**2+(0.5*et_hs)**2)**0.5
     points_3dTo2D=targets_3dTo2Ds*scale.reshape(-1,1)+center
     return points_3dTo2D.reshape(-1,8,2).astype(np.int32)
+
+def box_transform_3dTo2D_new_loss(et_boxes, gt_3dTo2D):
+    num=len(et_boxes)
+    deltas=np.zeros((num,16),dtype=np.float32)
+    et_ws  = et_boxes[:, 2] - et_boxes[:, 0] + 1.0
+    et_hs  = et_boxes[:, 3] - et_boxes[:, 1] + 1.0
+    c_xs   = (et_boxes[:, 2] + et_boxes[:, 0])/2
+    c_ys   = (et_boxes[:, 3] + et_boxes[:, 1])/2
+    # center= np.tile(np.hstack([c_xs.reshape(-1,1),c_ys.reshape(-1,1)]),(1,8))
+    # pdb.set_trace()
+    Low_center= np.tile(np.hstack([c_xs.reshape(-1,1), et_boxes[:,3].reshape(-1,1)]),(1,4))
+    heigh_center= np.tile(np.hstack([c_xs.reshape(-1,1), et_boxes[:,1].reshape(-1,1)]),(1,4))
+    center = np.hstack([Low_center, heigh_center])
+    scale = np.tile(np.hstack([0.5*et_ws.reshape(-1,1), 0.5*et_hs.reshape(-1,1)]),(1,8))
+
+    deltas = (gt_3dTo2D-center)/scale
+    return deltas
+
+def box_transform_3dTo2D_new_loss_inv(et_boxes,targets_3dTo2Ds):
+    num=len(et_boxes)
+    points_3dTo2D=np.zeros((num,16),dtype=np.int32) 
+    et_ws  = et_boxes[:, 2] - et_boxes[:, 0] + 1.0
+    et_hs  = et_boxes[:, 3] - et_boxes[:, 1] + 1.0
+    c_xs   = (et_boxes[:, 2] + et_boxes[:, 0])/2
+    c_ys   = (et_boxes[:, 3] + et_boxes[:, 1])/2
+
+    Low_center= np.tile(np.hstack([c_xs.reshape(-1,1), et_boxes[:,3].reshape(-1,1)]),(1,4))
+    heigh_center= np.tile(np.hstack([c_xs.reshape(-1,1), et_boxes[:,1].reshape(-1,1)]),(1,4))
+    center = np.hstack([Low_center, heigh_center])
+    scale = np.tile(np.hstack([0.5*et_ws.reshape(-1,1), 0.5*et_hs.reshape(-1,1)]),(1,8))
+
+    points_3dTo2D=targets_3dTo2Ds*scale+center
+    return points_3dTo2D.reshape(-1,8,2).astype(np.int32)    
 
 def box3d_transform_inv(et_boxes3d, deltas):
 

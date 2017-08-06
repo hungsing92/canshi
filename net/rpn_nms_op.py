@@ -108,7 +108,22 @@ def draw_rpn_nms(image, rois, roi_scores,  darker=0.75):
     for n in range(0, num):
         i   = inds[n]
         box = rois[i,1:5].astype(np.int)
-        v=255*n/num
+        # v=255*n/num
+        v=255
+        color = (0,v,v)
+        cv2.rectangle(img_rpn_nms,(box[0], box[1]), (box[2], box[3]), color, 1)
+
+    return img_rpn_nms
+
+def draw_rpn_nms_newloss(image, rois,  darker=0.75):
+    img_rpn_nms = image.copy()*darker
+      #sort ascend #[::-1]
+    num = len(rois)
+    for n in range(0, num):
+
+        box = rois[n,1:5].astype(np.int)
+        # v=255*n/num
+        v=255
         color = (0,v,v)
         cv2.rectangle(img_rpn_nms,(box[0], box[1]), (box[2], box[3]), color, 1)
 

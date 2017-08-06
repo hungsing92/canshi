@@ -67,17 +67,58 @@ def rcnn_target(rois, gt_labels, gt_boxes, gt_boxes3d):
 
     return rois, labels, targets
 
+def _add_jittered_boxes(rois, batch_inds, gt_boxes, jitter=0.1):
+    ws = gt_boxes[:, 2] - gt_boxes[:, 0]
+    hs = gt_boxes[:, 3] - gt_boxes[:, 1]
+    shape = len(gt_boxes)
+    jitter = np.random.uniform(-jitter, jitter, [shape, 1])
+    jitter = jitter.reshape(-1,1)
+    ws_offset = ws * jitter
+    hs_offset = hs * jitter
+    x1s = gt_boxes[:, 0] + ws_offset
+    x2s = gt_boxes[:, 2] + ws_offset
+    y1s = gt_boxes[:, 1] + hs_offset
+    y2s = gt_boxes[:, 3] + hs_offset
+    boxes = np.hstack([
+                    x1s[:, tf.newaxis],
+                y1s[:, tf.newaxis],
+                x2s[:, tf.newaxis],
+                y2s[:, tf.newaxis]])
+    new_batch_inds = np.zeros([shape], np.int32)
+    zeros         = np.zeros((shape, 1), dtype=np.float32)
+    return np.vstack([rois,np.hstack((zeros, boxes))]) \
+
+def _add_jittered_boxes(gt_boxes, top_box_thresh = 0.15, nums_of_augment = 5):
+    gt_nums = len(gt_boxes)
+    top_rois = np.zeros((gt_nums*nums_of_augment,5))
+    inds = 0
+    # np.random.seed(None)
+    for i in range(gt_nums):
+        top_box = gt_boxes[i]
+        width = top_box[2]- top_box[0]
+        height = top_box[3]- top_box[1]
+        for j in range(nums_of_augment):
+            x1 = top_box[0]+np.random.uniform(-top_box_thresh,top_box_thresh)*width
+            x2 = top_box[2]+np.random.uniform(-top_box_thresh,top_box_thresh)*width
+            y1 = top_box[1]+np.random.uniform(-top_box_thresh,top_box_thresh)*height
+            y2 = top_box[3]+np.random.uniform(-top_box_thresh,top_box_thresh)*height
+            top_rois[inds,1:] = np.array([x1,y1,x2,y2])#,dtype=np.int32)
+
+            inds = inds+1
+    return top_rois
 
 def rcnn_target_3dTo2D(rois, gt_labels, gt_boxes, gt_3dTo2Ds, width, height):
 
     # Include "ground-truth" in the set of candidate rois
     rois = rois.reshape(-1,5)  # Proposal (i, x1, y1, x2, y2) coming from RPN
     num           = len(gt_boxes)
+    jittered_rois = _add_jittered_boxes(gt_boxes ,0.1, 5)
     zeros         = np.zeros((num, 1), dtype=np.float32)
-    extended_rois = np.vstack((rois, np.hstack((zeros, gt_boxes))))
+    extended_rois = np.vstack((rois, jittered_rois, np.hstack((zeros, gt_boxes))))
     assert np.all(extended_rois[:, 0] == 0), 'Only single image batches are supported'
 
     rois_per_image    = CFG.TRAIN.RCNN_BATCH_SIZE
+    # print('rois_per_image: ',rois_per_image)
     fg_rois_per_image = np.round(CFG.TRAIN.RCNN_FG_FRACTION * rois_per_image)
 
     # overlaps: (rois x gt_boxes)
@@ -117,7 +158,8 @@ def rcnn_target_3dTo2D(rois, gt_labels, gt_boxes, gt_3dTo2Ds, width, height):
     et_boxes=rois[:,1:5]
 
     targets_2d = box_transform_2d(rois, gt_boxes2d)
-    targets_3dTo2Ds = box_transform_3dTo2D(et_boxes, gt_3dTo2D_)
+    # targets_3dTo2Ds = box_transform_3dTo2D(et_boxes, gt_3dTo2D_)
+    targets_3dTo2Ds = box_transform_3dTo2D_new_loss(et_boxes, gt_3dTo2D_)
 
         #exit(0)
     return rois, labels, targets_2d, targets_3dTo2Ds

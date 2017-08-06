@@ -336,7 +336,7 @@ def run_train():
                 img_rgb_rois = draw_boxes(rgb, batch_rgb_rois[:,1:5], color=(255,0,255), thickness=1)
                 imshow('img_rgb_rois',img_rgb_rois)
 
-                projections=box_transform_3dTo2D_inv(batch_rgb_rois[:,1:],batch_fuse_targets_3dTo2Ds)
+                projections=box_transform_3dTo2D_new_loss_inv(batch_rgb_rois[:,1:],batch_fuse_targets_3dTo2Ds)
                 img_rcnn_3dTo2D = draw_rgb_projections(rgb, projections, color=(0,0,255), thickness=1)
                 imshow('img_rcnn_3dTo2D',img_rcnn_3dTo2D)
                 # plt.pause(0.5)

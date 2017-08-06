@@ -12,7 +12,7 @@ from net.rcnn_loss_op import *
 from net.rpn_target_op import make_bases, make_anchors, rpn_target, anchor_filter
 from net.rcnn_target_op import rcnn_target
 
-from net.rpn_nms_op     import draw_rpn_before_nms, draw_rpn_after_nms, draw_rpn_nms,rpn_nms_generator
+from net.rpn_nms_op     import draw_rpn_before_nms, draw_rpn_after_nms, draw_rpn_nms,rpn_nms_generator,draw_rpn_nms_newloss
 from net.rcnn_nms_op    import rcnn_nms, draw_rcnn_berfore_nms, draw_rcnn_after_nms_top,draw_rcnn_nms, rcnn_nms_2d
 from net.rpn_target_op  import draw_rpn_gt, draw_rpn_targets, draw_rpn_labels
 from net.rcnn_target_op import draw_rcnn_targets, draw_rcnn_labels
@@ -114,7 +114,7 @@ def load_dummy_datas(index):
     gt_boxes2d=[]
     rgbs_norm =[]
 
-    rgb   = cv2.imread(kitti_dir+'/%010d.png'%int(index),1).astype(np.float32, copy=False)
+    rgb   = cv2.imread(kitti_dir+'/%06d.png'%int(index),1).astype(np.float32, copy=False)
     # rgb=rgb[432:,:]
     # rgb_shape = rgb.shape
     # resize_scale=0.6
@@ -167,15 +167,15 @@ MM_PER_VIEW1 = 180, 70, 60, [1,1,0]#[ 12.0909996 , -1.04700089, -2.03249991]
 source_sequence = {0: '2016_0306_110310_227', 1: '03010907_0024', 2:'03010916_0027', 3: '03070855_0046', 4: 'CLIP0121', 5: 'CLIP0233', \
 6: 'CLIP0238', 7: 'kitti_005', 8: 'kitti_059', 9: 'kitti_064', 10: 'KITTI_Train'}
 
-target_sequence = source_sequence[8]
+target_sequence = source_sequence[10]
 
 
-kitti_dir='/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/source_sequence/'+ target_sequence
-# kitti_dir = "/home/hhs/4T/datasets/KITTI/object/training/image_2/"
+# kitti_dir='/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/source_sequence/'+ target_sequence
+kitti_dir = "/home/hhs/4T/datasets/KITTI/object/training/image_2/"
 # kitti_dir='/home/hhs/4T/datasets/Last_14000/Raw_Images'
 
-save_path = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'result_crop_'+ target_sequence
-save_path2d = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'2d_'+ target_sequence
+save_path = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'result_crop_1'+ target_sequence
+save_path2d = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'2d_1'+ target_sequence
 
 empty(save_path)
 makedirs(save_path)
@@ -203,8 +203,8 @@ def run_test():
     # num_frames=len(index)
 
     files_list=glob.glob(kitti_dir+"/*.png")
-    # index=np.array([int(file_index.strip().split('/')[-1].split('.')[0]) for file_index in files_list ])
-    index=np.array([int(file_index.strip().split('/')[-1].split('.')[0].split('_')[-1]) for file_index in files_list ])
+    index=np.array([int(file_index.strip().split('/')[-1].split('.')[0]) for file_index in files_list ])
+    # index=np.array([int(file_index.strip().split('/')[-1].split('.')[0].split('_')[-1]) for file_index in files_list ])
     index=sorted(index)
     print('len(index):%d'%len(index))
     num_frames=len(index)
@@ -271,7 +271,7 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D_val_120000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D_newloss_trainval_075000.ckpt')
         # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000trainval.ckpt')
         # 
         # # pdb.set_trace()
@@ -336,31 +336,52 @@ def run_test():
             }
             # batch_top_probs,  batch_top_deltas  =  sess.run([ top_probs,  top_deltas  ],fd2)
             batch_fuse_probs, batch_fuse_deltas, batch_fuse_deltas_3dTo2D =  sess.run([ fuse_probs, fuse_deltas, fuse_deltas_3dTo2D ],fd2)
+
+
+            # batch_fuse_deltas = batch_fuse_deltas[:,1].reshape(-1,4)
+            # boxes2d_temp = box2d_transform_inv(batch_proposals[:,1:], batch_fuse_deltas)
+            # zeros         = np.zeros((len(boxes2d_temp), 1), dtype=np.float32)
+            # batch_proposals = np.hstack((zeros, boxes2d_temp))
+            probs, boxes2d, projections, batch_proposals_ = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.5)
+
+            fd2={
+                **fd1,
+
+                rgb_images:      batch_rgb_images,
+
+                rgb_rois:        batch_proposals,
+
+            }
+            # batch_top_probs,  batch_top_deltas  =  sess.run([ top_probs,  top_deltas  ],fd2)
+            batch_fuse_probs, batch_fuse_deltas, batch_fuse_deltas_3dTo2D =  sess.run([ fuse_probs, fuse_deltas, fuse_deltas_3dTo2D ],fd2)
+
+            probs, boxes2d, projections, batch_proposals_ = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.45)
             
-            probs, boxes2d, projections = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.3)
             # print('nums of boxes3d : %d'%len(boxes3d))
             # generat_test_reslut(probs, boxes3d, rgb_shape, int(index[iter]), boxes2d)
             speed=time.time()-start_time
             print('speed: %0.4fs'%speed)
             # pdb.set_trace()
+
             # debug: ------------------------------------
             if is_show == 1:
 
                 rgb=rgbs[idx]
               
-                img_rpn_nms = draw_rpn_nms(rgb, batch_proposals, batch_proposal_scores)
+                # img_rpn_nms = draw_rpn_nms(rgb, batch_proposals, batch_proposal_scores)
+                img_rpn_nms = draw_rpn_nms_newloss(rgb, batch_proposals_)
                 # img_gt     = draw_rpn_gt(rgb, batch_gt_boxes2d, batch_gt_labels)
                 # imshow('img_gt',img_gt)
-                # imshow('img_rpn_nms',img_rpn_nms)
+                imshow('img_rpn_nms',img_rpn_nms)
 
                 img_rcnn_nms = draw_rgb_projections(rgb, projections, color=(0,0,255), thickness=1)
                 img_rgb_2d_detection = draw_boxes(rgb, boxes2d, color=(255,0,255), thickness=1)
-                # imshow('draw_rcnn_nms',img_rcnn_nms)
-                # imshow('img_rgb_2d_detection',img_rgb_2d_detection)
+                imshow('draw_rcnn_nms',img_rcnn_nms)
+                imshow('img_rgb_2d_detection',img_rgb_2d_detection)
                 cv2.imwrite(save_path2d+'/%05d.png'%index[iter],img_rgb_2d_detection)
                 cv2.imwrite(save_path+'/%05d.png'%index[iter],img_rcnn_nms)
 
-                # cv2.waitKey(0)
+                cv2.waitKey(0)
                 # plt.pause(0.25)
                 # mlab.clf(mfig)
 
