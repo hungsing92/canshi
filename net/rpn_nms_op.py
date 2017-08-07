@@ -2,6 +2,7 @@ from net.common import *
 from net.utility.draw import *
 
 from net.processing.boxes import *
+from net.processing.boxes3d import *
 from net.rpn_target_op import make_bases, make_anchors
 
 
@@ -167,7 +168,8 @@ def rpn_nms_generator(
 
 
         # Convert anchors into proposals via box transformations
-        proposals = box_transform_inv(anchors, deltas)
+        # proposals = box_transform_inv(anchors, deltas)
+        proposals = box2d_transform_inv(anchors, deltas)
 
         # proposals_z=deltasZ
         # 2. clip predicted boxes to image

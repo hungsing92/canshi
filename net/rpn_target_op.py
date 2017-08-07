@@ -3,6 +3,7 @@ from net.configuration import *
 from net.processing.boxes import *
 from net.blocks import *
 from net.utility.draw import *
+from net.processing.boxes3d import *
 import pdb
 
 ## base box ##
@@ -189,7 +190,8 @@ def rpn_target( anchors, inside_inds, gt_labels,  gt_boxes):
     pos_inds = inside_inds[idx_target]
     pos_anchors  = inside_anchors[idx_target]
     pos_gt_boxes = (gt_boxes[argmax_overlaps])[idx_target]
-    targets = box_transform(pos_anchors, pos_gt_boxes)
+    # targets = box_transform(pos_anchors, pos_gt_boxes)
+    targets = box_transform_2d(pos_anchors, pos_gt_boxes)
 
     return inds, pos_inds, labels, targets
 
@@ -368,7 +370,8 @@ def draw_rpn_targets(image, anchors, pos_inds, targets, darken=0.7):
     for n,i in enumerate(fg_target_inds):
         a = anchors[i]
         t = targets[n]
-        b = box_transform_inv(a.reshape(1,4), t.reshape(1,4))
+        # b = box_transform_inv(a.reshape(1,4), t.reshape(1,4))
+        b = box2d_transform_inv(a.reshape(1,4), t.reshape(1,4))
         b = b.reshape(-1).astype(np.int32)
 
         cv2.rectangle(img_target,(a[0], a[1]), (a[2], a[3]), (0,0,255), 1)

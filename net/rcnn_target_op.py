@@ -112,7 +112,7 @@ def rcnn_target_3dTo2D(rois, gt_labels, gt_boxes, gt_3dTo2Ds, width, height):
     # Include "ground-truth" in the set of candidate rois
     rois = rois.reshape(-1,5)  # Proposal (i, x1, y1, x2, y2) coming from RPN
     num           = len(gt_boxes)
-    jittered_rois = _add_jittered_boxes(gt_boxes ,0.1, 5)
+    jittered_rois = _add_jittered_boxes(gt_boxes ,0.1, 3)
     zeros         = np.zeros((num, 1), dtype=np.float32)
     extended_rois = np.vstack((rois, jittered_rois, np.hstack((zeros, gt_boxes))))
     assert np.all(extended_rois[:, 0] == 0), 'Only single image batches are supported'
@@ -158,8 +158,8 @@ def rcnn_target_3dTo2D(rois, gt_labels, gt_boxes, gt_3dTo2Ds, width, height):
     et_boxes=rois[:,1:5]
 
     targets_2d = box_transform_2d(rois, gt_boxes2d)
-    # targets_3dTo2Ds = box_transform_3dTo2D(et_boxes, gt_3dTo2D_)
-    targets_3dTo2Ds = box_transform_3dTo2D_new_loss(et_boxes, gt_3dTo2D_)
+    targets_3dTo2Ds = box_transform_3dTo2D(et_boxes, gt_3dTo2D_)
+    # targets_3dTo2Ds = box_transform_3dTo2D_new_loss(et_boxes, gt_3dTo2D_)
 
         #exit(0)
     return rois, labels, targets_2d, targets_3dTo2Ds

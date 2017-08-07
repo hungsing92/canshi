@@ -114,12 +114,12 @@ def load_dummy_datas(index):
     gt_boxes2d=[]
     rgbs_norm =[]
 
-    rgb   = cv2.imread(kitti_dir+'/%06d.png'%int(index),1).astype(np.float32, copy=False)
-    # rgb=rgb[432:,:]
-    # rgb_shape = rgb.shape
-    # resize_scale=0.6
+    rgb   = cv2.imread(kitti_dir+'/%05d.png'%int(index),1).astype(np.float32, copy=False)
+    rgb=rgb[432:,:]
+    rgb_shape = rgb.shape
+    resize_scale=0.6
 
-    # rgb = cv2.resize(rgb,(int(rgb_shape[1]*resize_scale), int(rgb_shape[0]*resize_scale)))
+    rgb = cv2.resize(rgb,(int(rgb_shape[1]*resize_scale), int(rgb_shape[0]*resize_scale)))
     rgbs_norm0=(rgb-PIXEL_MEANS)/255
 
     # rgb = np.minimum(rgb*1.5,255)
@@ -167,11 +167,11 @@ MM_PER_VIEW1 = 180, 70, 60, [1,1,0]#[ 12.0909996 , -1.04700089, -2.03249991]
 source_sequence = {0: '2016_0306_110310_227', 1: '03010907_0024', 2:'03010916_0027', 3: '03070855_0046', 4: 'CLIP0121', 5: 'CLIP0233', \
 6: 'CLIP0238', 7: 'kitti_005', 8: 'kitti_059', 9: 'kitti_064', 10: 'KITTI_Train'}
 
-target_sequence = source_sequence[10]
+target_sequence = source_sequence[1]
 
 
-# kitti_dir='/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/source_sequence/'+ target_sequence
-kitti_dir = "/home/hhs/4T/datasets/KITTI/object/training/image_2/"
+kitti_dir='/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/source_sequence/'+ target_sequence
+# kitti_dir = "/home/hhs/4T/datasets/KITTI/object/training/image_2/"
 # kitti_dir='/home/hhs/4T/datasets/Last_14000/Raw_Images'
 
 save_path = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'result_crop_1'+ target_sequence
@@ -271,7 +271,7 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D_newloss_trainval_075000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D_newrpnloss_trainval_100000.ckpt')
         # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000trainval.ckpt')
         # 
         # # pdb.set_trace()
@@ -344,18 +344,18 @@ def run_test():
             # batch_proposals = np.hstack((zeros, boxes2d_temp))
             probs, boxes2d, projections, batch_proposals_ = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.5)
 
-            fd2={
-                **fd1,
+            # fd2={
+            #     **fd1,
 
-                rgb_images:      batch_rgb_images,
+            #     rgb_images:      batch_rgb_images,
 
-                rgb_rois:        batch_proposals,
+            #     rgb_rois:        batch_proposals,
 
-            }
-            # batch_top_probs,  batch_top_deltas  =  sess.run([ top_probs,  top_deltas  ],fd2)
-            batch_fuse_probs, batch_fuse_deltas, batch_fuse_deltas_3dTo2D =  sess.run([ fuse_probs, fuse_deltas, fuse_deltas_3dTo2D ],fd2)
+            # }
+            # # batch_top_probs,  batch_top_deltas  =  sess.run([ top_probs,  top_deltas  ],fd2)
+            # batch_fuse_probs, batch_fuse_deltas, batch_fuse_deltas_3dTo2D =  sess.run([ fuse_probs, fuse_deltas, fuse_deltas_3dTo2D ],fd2)
 
-            probs, boxes2d, projections, batch_proposals_ = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.45)
+            # probs, boxes2d, projections, batch_proposals_ = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.45)
             
             # print('nums of boxes3d : %d'%len(boxes3d))
             # generat_test_reslut(probs, boxes3d, rgb_shape, int(index[iter]), boxes2d)

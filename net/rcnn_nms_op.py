@@ -170,8 +170,8 @@ def rcnn_nms_2d( probs,  deltas,  rois2d, deltas_3dTo2D, threshold = 0.5):
     boxes2d = boxes2d[keep]
     deltas_3dTo2D = deltas_3dTo2D[keep]
     rois2d = rois2d[keep]
-    # projections=box_transform_3dTo2D_inv(boxes2d,deltas_3dTo2D)
-    projections=box_transform_3dTo2D_new_loss_inv(boxes2d,deltas_3dTo2D)
+    projections=box_transform_3dTo2D_inv(boxes2d,deltas_3dTo2D)
+    # projections=box_transform_3dTo2D_new_loss_inv(boxes2d,deltas_3dTo2D)
 
     return probs, boxes2d, projections,rois2d
 

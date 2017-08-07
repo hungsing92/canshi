@@ -350,7 +350,10 @@ def box3d_transform(et_boxes3d, gt_boxes3d):
 
 def box_transform_2d(et_boxes2d, gt_boxes):
     # pdb.set_trace()
-    et_boxes=et_boxes2d[:,1:]
+    if et_boxes2d.shape[-1]==5:
+        et_boxes=et_boxes2d[:,1:]
+    else:
+        et_boxes=et_boxes2d
     num=len(et_boxes)
     deltas=np.zeros((num,4),dtype=np.float32)
     et_ws  = et_boxes[:, 2] - et_boxes[:, 0] + 1.0
@@ -361,12 +364,13 @@ def box_transform_2d(et_boxes2d, gt_boxes):
 
 def box2d_transform_inv(et_boxes, deltas):
     num=len(et_boxes)
+    # et_boxes = et_boxes.reshape(-1,4)
     boxes2d=np.zeros((num,4),dtype=np.float32)    
     et_ws  = et_boxes[:, 2] - et_boxes[:, 0] + 1.0
     et_hs  = et_boxes[:, 3] - et_boxes[:, 1] + 1.0
     scale = ((0.5*et_ws)**2+(0.5*et_hs)**2)**0.5
     boxes2d = deltas*scale.reshape(-1,1)+et_boxes
-    return boxes2d
+    return boxes2d.astype(np.float32)
 
 
 def box_transform_3dTo2D(et_boxes, gt_3dTo2D):
