@@ -109,7 +109,7 @@ def data_augmentation(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label):
 		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d= change_scale(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d,randInt)
 	elif randInt ==1:
 		randInt = np.random.randint(4)
-		rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, randInt)
+		# rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = crop_up(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label, randInt)
 	else:
 		pass
 	randInt = np.random.randint(2)

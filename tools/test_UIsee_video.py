@@ -262,7 +262,7 @@ def run_test():
 
     fuse_scores, fuse_probs, fuse_deltas, fuse_deltas_3dTo2D = \
         fusion_net(
-            ( [rgb_features,     rgb_rois,     7,7,1./(1*stride)],),num_class, out_shape) #<todo>  add non max suppression
+            ( [rgb_features,     rgb_rois,     14,14,1./(1*stride)],),num_class, out_shape) #<todo>  add non max suppression
 
     sess = tf.InteractiveSession()
     with sess.as_default():
@@ -271,7 +271,7 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D_newrpnloss_trainval_100000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D_newrpnloss_trainval_newRoi135000.ckpt')
         # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000trainval.ckpt')
         # 
         # # pdb.set_trace()
@@ -342,7 +342,7 @@ def run_test():
             # boxes2d_temp = box2d_transform_inv(batch_proposals[:,1:], batch_fuse_deltas)
             # zeros         = np.zeros((len(boxes2d_temp), 1), dtype=np.float32)
             # batch_proposals = np.hstack((zeros, boxes2d_temp))
-            probs, boxes2d, projections, batch_proposals_ = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.5)
+            probs, boxes2d, projections, batch_proposals_ = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.3)
 
             # fd2={
             #     **fd1,

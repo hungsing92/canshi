@@ -47,9 +47,11 @@ if __name__ == "__main__":
     # construct the argument parser and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-i", "--image", required=True, help="Path to the image")
+    ap.add_argument("-s", "--save_path", required=True, help="Path to save tag")
     args = vars(ap.parse_args())
     
     img_fn = args["image"]
+    print(args["save_path"])
     image = cv2.imread(img_fn)
     clone = image.copy()
     cv2.namedWindow("image")
@@ -72,7 +74,7 @@ if __name__ == "__main__":
     
     cv2.destroyAllWindows()
     
-    print np.array(bbs)
+    print( np.array(bbs))
      
     h5_fn = img_fn[:-4].replace('img','bb') + '.h5'
  

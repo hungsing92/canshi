@@ -56,6 +56,7 @@ def remove(file):
 def empty(dir):
     if os.path.isdir(dir):
         shutil.rmtree(dir, ignore_errors=True)
+        os.makedirs(dir)
     else:
         os.makedirs(dir)
 

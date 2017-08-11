@@ -54,7 +54,7 @@ def load_dummy_datas(index):
         gt_3dTo2D = np.load(train_data_root+'/gt_3dTo2D/gt_3dTo2D_%05d.npy'%int(index[n]))
         gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%05d.npy'%int(index[n]))
 
-        # rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = data_augmentation(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label)
+        rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label = data_augmentation(rgb, rgbs_norm0, gt_3dTo2D, gt_box2d, gt_label)
 
         rgbs.append(rgb)
         gt_labels.append(gt_label)
@@ -127,7 +127,7 @@ def run_train():
 
     fuse_scores, fuse_probs, fuse_deltas, fuse_deltas_3dTo2D = \
         fusion_net(
-            ( [rgb_features,     rgb_rois,     7,7,1./(1*stride)],),num_class, out_shape) #<todo>  add non max suppression
+            ( [rgb_features,     rgb_rois,     14,14,1./(1*stride)],),num_class, out_shape) #<todo>  add non max suppression
 
 
 
@@ -168,19 +168,19 @@ def run_train():
     merged = tf.summary.merge_all()
 
     sess = tf.InteractiveSession()
-    train_writer = tf.summary.FileWriter( './outputs/tensorboard/R_2dTo3d_val_08_05_newloss',
+    train_writer = tf.summary.FileWriter( './outputs/tensorboard/R_2dTo3d_val_08_05_newloss_newRoi',
                                       sess.graph)
     with sess.as_default():
         sess.run( tf.global_variables_initializer(), { IS_TRAIN_PHASE : True } )
         saver  = tf.train.Saver() 
         # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000trainval.ckpt') 
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D_newrpnloss_trainval_100000.ckpt') 
-        # saver.restore(sess, './outputs/check_points/snap_2dTo3D_newloss_trainval_015000.ckpt') 
+        # saver.restore(sess, './outputs/check_points/snap_2dTo3D_newrpnloss_trainval_100000.ckpt') 
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D_newrpnloss_trainval_newRoi080000.ckpt') 
         
 
-        # var_lt_res=[v for v in tf.all_variables() if  not ('Adam' in v.name)]
+        # var_lt_res=[v for v in tf.all_variables() if  not ('fuse' in v.name)]
         # saver_0=tf.train.Saver(var_lt_res) 
-        # saver_0.restore(sess, './outputs/check_points/snap_2dTo3d_with_2d_pretrained_val_105000.ckpt') 
+        # saver_0.restore(sess, './outputs/check_points/snap_2dTo3D_newrpnloss_trainval_100000.ckpt') 
 
         # var_lt_res=[v for v in tf.trainable_variables() if v.name.startswith('resnet_v1')]#resnet_v1_50
         # saver_0=tf.train.Saver(var_lt_res)        
@@ -194,7 +194,7 @@ def run_train():
         batch_top_reg_loss =0
         batch_fuse_cls_loss=0
         batch_fuse_reg_loss=0
-        rate=0.000015
+        rate=0.00002
         frame_range = np.arange(num_frames)
         idx=0
         frame=0
@@ -229,7 +229,7 @@ def run_train():
             print('processing image : %s'%image_index[idx])
 
             if (iter+1)%(10000)==0:
-                rate=0.9*rate
+                rate=0.8*rate
 
 
             rgb_shape   = rgbs[idx].shape
@@ -310,7 +310,7 @@ def run_train():
             # save: ------------------------------------
             if (iter)%5000==0 and (iter!=0):
                 # saver.save(sess, out_dir + '/check_points/snap_2dTo3D_val_%06d.ckpt'%iter)  #iter
-                saver.save(sess, out_dir + '/check_points/snap_2dTo3D_newrpnloss_trainval_%06d.ckpt'%iter)  #iter
+                saver.save(sess, out_dir + '/check_points/snap_2dTo3D_newrpnloss_trainval_newRoi%06d.ckpt'%iter)  #iter
                 # saver.save(sess, out_dir + '/check_points/snap_R2R_new_resolution_%06d.ckpt'%iter)  #iter
 
                 pass

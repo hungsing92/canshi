@@ -14,7 +14,7 @@ from tensorflow.contrib.slim.python.slim.nets import resnet_v1
 import vgg
 from fpn import build_pyramid
 
-keep_prob=0.75
+keep_prob=0.5
 # nms_pre_topn_=5000
 # nms_post_topn_=2000
 
@@ -157,12 +157,22 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
         # feature   = conv2d_bn_relu(feature, num_kernels=512, kernel_size=(3,3), stride=[1,1,1,1], padding='SAME', name='%d'%n)
         roi_features,  roi_idxs = tf_roipooling(feature,roi, pool_height, pool_width, pool_scale, name='%d/pool'%n)
         # pdb.set_trace()
-        roi_features=flatten(roi_features)
+        # roi_features=flatten(roi_features)
+
         # roi_features_ = tf.stop_gradient(roi_features)
 
         with tf.variable_scope('fuse-block-1-%d'%n):
           tf.summary.histogram('fuse-block_input_%d'%n, roi_features)
-          block = linear_bn_relu(roi_features, num_hiddens=2048, name='1')#512, so small?
+          
+
+          feature   = conv2d_bn_relu(roi_features, num_kernels=256, kernel_size=(1,1), stride=[1,1,1,1], padding='SAME', name='1%d'%n)
+          feature   = conv2d_bn_relu(feature, num_kernels=128, kernel_size=(3,3), stride=[1,1,1,1], padding='SAME', name='2%d'%n)
+          feature   = conv2d_bn_relu(feature, num_kernels=128, kernel_size=(3,3), stride=[1,1,1,1], padding='SAME', name='3%d'%n)
+          feature   = conv2d_bn_relu(feature, num_kernels=256, kernel_size=(1,1), stride=[1,1,1,1], padding='SAME', name='4%d'%n)
+          roi_features = maxpool(feature, kernel_size=(2,2), stride=[1,2,2,1], padding='SAME', name='fuse_maxpooling' )
+          roi_features=flatten(roi_features)
+
+          block = linear_bn_relu(roi_features, num_hiddens=1024, name='1')#512, so small?
           tf.summary.histogram('fuse-block1_%d'%n, block)
           block = tf.nn.dropout(block, keep_prob, name='drop1')
   
@@ -185,7 +195,7 @@ def fusion_net(feature_list, num_class, out_shape=(2,2)):
       deltas_3d  = linear(block, num_hiddens=dim*num_class, name='box')
       deltas_3d  = tf.reshape(deltas_3d,(-1,num_class,*out_shape))
     with tf.variable_scope('3D') as sc_:
-      block3D = linear_bn_relu(roi_features, num_hiddens=2048, name='1')#512, so small?
+      block3D = linear_bn_relu(roi_features, num_hiddens=512, name='1')#512, so small?
       block3D_1 = tf.nn.dropout(block3D, keep_prob, name='drop1')
       block = linear_bn_relu(block3D_1, num_hiddens=512, name='3D')
       # block = tf.nn.dropout(block, keep_prob, name='drop4')
