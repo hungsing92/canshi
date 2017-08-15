@@ -17,93 +17,14 @@ from net.rcnn_nms_op    import rcnn_nms, draw_rcnn_berfore_nms, draw_rcnn_after_
 from net.rpn_target_op  import draw_rpn_gt, draw_rpn_targets, draw_rpn_labels
 from net.rcnn_target_op import draw_rcnn_targets, draw_rcnn_labels
 
-import mayavi.mlab as mlab
 import time
 import glob
 import tensorflow as tf
 slim = tf.contrib.slim
 
-from ResNet50_vgg_double_up_c import *
+from network import *
 from tensorflow.python import debug as tf_debug
 
-
-
-#---------------------------------------------------------------------------------------------
-#  todo:
-#    -- 3d box prameterisation
-#    -- batch renormalisation
-#    -- multiple image training
-
-
-#http://3dimage.ee.tsinghua.edu.cn/cxz
-# "Multi-View 3D Object Detection Network for Autonomous Driving" - Xiaozhi Chen, CVPR 2017
-#<todo>
-
-def generat_test_reslut(probs, boxes3d, rgb_shape, index, boxes2d=None ):
-    result_path='./evaluate_object/val_R/data/'
-    makedirs(result_path)
-    # empty(result_path)
-    if len(boxes3d)==0:
-        return 1
-    file=open(result_path+'%06d'%index+'.txt', 'w')
-    if boxes2d==None:
-        rgb_boxes=project_to_rgb_roi(boxes3d, rgb_shape[1], rgb_shape[0] )
-        rgb_boxes=rgb_boxes[:,1:5]
-    else:
-        rgb_boxes=boxes2d
-    reuslts=[]
-    # pdb.set_trace()
-    for num in np.arange(len(probs)):
-        box= rgb_boxes[num]
-        box3d = boxes3d[num]
-        center = np.sum(box3d,axis=0, keepdims=True)/8
-        # pdb.set_trace()
-        dis=0
-        for k in [0, 2, 4, 6]:
-            i,j=k,k+1
-            dis +=np.sum((box3d[i]-box3d[j])**2) **0.5
-        w = dis/4
-        dis=0
-        for k in [3, 7]:
-            i,j=k,k-3
-            dis +=np.sum((box3d[i]-box3d[j])**2) **0.5
-            i,j=k-2,k-1
-            dis +=np.sum((box3d[i]-box3d[j])**2) **0.5
-        l = dis/4
-        dis=0
-        for k in range(0,4):
-            i,j=k,k+4
-            dis +=np.sum((box3d[i]-box3d[j])**2) **0.5
-        h = dis/4
-
-        x = center[:,0]
-        y = center[:,1]
-        z = center[:,2]-h/2
-        velo=np.array([x,y,z,1]).reshape(4,1)
-        tx,ty,tz = project_velo2cam(velo)
-
-        x1 = float(box3d[3,0])
-        y1 = float(box3d[3,1])
-        x2 = float(box3d[0,0])
-        y2 = float(box3d[0,1])
-        vect = (x2-x1,y2-y1)
-        ry= np.arctan((x1-x2)/-(y2-y1))
-        if vect[0]>0:
-            if ry<0:
-                ry = ry + np.pi
-        else:
-            if ry>0:
-                ry = ry - np.pi
-        # pdb.set_trace()
-        if probs == [] :
-            line='Car -1 -1 -10 %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'%(box[0], box[1], box[2], box[3],h,w,l,tx,ty,tz,ry,1-(i+1)*0.06)
-            file.write(line)
-        else:
-            line='Car -1 -1 -10 %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'%(box[0], box[1], box[2], box[3],h,w,l,tx,ty,tz,ry,probs[num])
-            file.write(line)
-
-    file.close()
-    return 1
 
 def load_dummy_datas(index):
 
@@ -114,7 +35,7 @@ def load_dummy_datas(index):
     gt_boxes2d=[]
     rgbs_norm =[]
 
-    rgb   = cv2.imread(kitti_dir+'/%010d.png'%int(index),1).astype(np.float32, copy=False)
+    rgb   = cv2.imread(ImagesPath+'/%06d.png'%int(index),1).astype(np.float32, copy=False)
     # rgb=rgb[432:,:]
     # rgb_shape = rgb.shape
     # resize_scale=0.6
@@ -122,95 +43,49 @@ def load_dummy_datas(index):
     # rgb = cv2.resize(rgb,(int(rgb_shape[1]*resize_scale), int(rgb_shape[0]*resize_scale)))
     rgbs_norm0=(rgb-PIXEL_MEANS)/255
 
-    # rgb = np.minimum(rgb*1.5,255)
-    # rgbs_norm0 =np.minimum( rgbs_norm0*1.5,255)
-    # gt_label  = np.load(train_data_root+'/gt_labels/gt_labels_%05d.npy'%int(index))
-    # gt_box2d = np.load(train_data_root+'/gt_boxes2d/gt_boxes2d_%05d.npy'%int(index))
-    # gt_3dTo2D = np.load(train_data_root+'/gt_3dTo2D/gt_3dTo2D_%05d.npy'%int(index))
-
     rgbs.append(rgb)
-    # gt_labels.append(gt_label)
-    # gt_boxes2d.append(gt_box2d)
-    # gt_3dTo2Ds.append(gt_3dTo2D)
     rgbs_norm.append(rgbs_norm0)
-    # explore dataset:
-    # print (gt_box3d)
-    if 0:
-        fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 1000))
-        projections=box3d_to_rgb_projections(gt_box3d)
-        rgb1 = draw_rgb_projections(rgb, projections, color=(255,255,255), thickness=2)
-        top_image1 = draw_box3d_on_top(top_image, gt_box3d, color=(255,255,255), thickness=2)
-        rgb_boxes=project_to_rgb_roi(gt_box3d, rgb_shape[1], rgb_shape[0] )
-                # rgb_boxes=batch_rgb_rois
-        img_rgb_2d_detection = draw_boxes(rgb, rgb_boxes[:,1:5], color=(255,0,255), thickness=1)
-        imshow('img_rgb_2d_detection',img_rgb_2d_detection)
-        imshow('rgb',rgb1)
-        imshow('top_image',top_image1)
-        mlab.clf(fig)
-        draw_lidar(lidar, fig=fig)
-        draw_gt_boxes3d(gt_box3d, fig=fig)
-        mlab.show(1)
-        cv2.waitKey(0)
-        pass
-    # pdb.set_trace()
-    # rgbs=np.array(rgbs)
-    ##exit(0)
-    mlab.close(all=True)
-    return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index
 
+    return  rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, index
 
 is_show=1
 # MM_PER_VIEW1 = 120, 30, 70, [1,1,0]
 MM_PER_VIEW1 = 180, 70, 60, [1,1,0]#[ 12.0909996 , -1.04700089, -2.03249991]
 
 # train_data_root='/home/users/hhs/4T/datasets/dummy_datas/seg'
-source_sequence = {0: '2016_0306_110310_227', 1: '03010907_0024', 2:'03010916_0027', 3: '03070855_0046', 4: 'CLIP0121', 5: 'CLIP0233', \
-6: 'CLIP0238', 7: 'kitti_005', 8: 'kitti_059', 9: 'kitti_064', 10: 'KITTI_Train'}
 
-target_sequence = source_sequence[8]
+ImagesPath = "/home/hhs/4T/datasets/KITTI/object/training/image_2/"
+# ImagesPath='/home/hhs/4T/datasets/Last_14000/Raw_Images'
 
+# ImagesPath='/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/source_sequence/'+ target_sequence
+# source_sequence = {0: '2016_0306_110310_227', 1: '03010907_0024', 2:'03010916_0027', 3: '03070855_0046', 4: 'CLIP0121', 5: 'CLIP0233', \
+# 6: 'CLIP0238', 7: 'kitti_005', 8: 'kitti_059', 9: 'kitti_064', 10: 'KITTI_Train'}
+# target_sequence = source_sequence[8]
+# save_path = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'result_crop_'+ target_sequence
+# save_path2d = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'2d_'+ target_sequence
+# empty(save_path)
+# makedirs(save_path)
+# empty(save_path2d)
+# makedirs(save_path2d)
 
-kitti_dir='/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/source_sequence/'+ target_sequence
-# kitti_dir = "/home/hhs/4T/datasets/KITTI/object/training/image_2/"
-# kitti_dir='/home/hhs/4T/datasets/Last_14000/Raw_Images'
-
-save_path = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'result_crop_'+ target_sequence
-save_path2d = '/home/hhs/4T/hongsheng/2dTo3D/faster_rcnn/examples/result_sequence/'+'2d_'+ target_sequence
-
-empty(save_path)
-makedirs(save_path)
-
-empty(save_path2d)
-makedirs(save_path2d)
 
 def run_test():
-
+    CFG.KEEPPROBS = 1
     # output dir, etc
     out_dir = './outputs'
     makedirs(out_dir +'/tf')
     makedirs(out_dir +'/check_points')
     log = Logger(out_dir+'/log/log_%s.txt'%(time.strftime('%Y-%m-%d %H:%M:%S')),mode='a')
 
-    # index=np.load(train_data_root+'/train.npy')
-    # index_file=open(train_data_root+'/val.txt')
-    # # index_file=open(train_data_root+'/train.txt')
-    # index = [ int(i.strip()) for i in index_file]
-    # index_file.close()
-
-    # index=sorted(index)
-
-    # print('len(index):%d'%len(index))
-    # num_frames=len(index)
-
-    files_list=glob.glob(kitti_dir+"/*.png")
-    # index=np.array([int(file_index.strip().split('/')[-1].split('.')[0]) for file_index in files_list ])
-    index=np.array([int(file_index.strip().split('/')[-1].split('.')[0].split('_')[-1]) for file_index in files_list ])
+    files_list=glob.glob(ImagesPath+"/*.png")
+    index=np.array([int(file_index.strip().split('/')[-1].split('.')[0]) for file_index in files_list ])
+    # index=np.array([int(file_index.strip().split('/')[-1].split('.')[0].split('_')[-1]) for file_index in files_list ])
     index=sorted(index)
     print('len(index):%d'%len(index))
     num_frames=len(index)
     # pdb.set_trace()
 
-    #lidar data -----------------
+
     if 1:
         ratios_rgb=np.array([0.5,1,2], dtype=np.float32)
         scales_rgb=np.array([0.5,1,2,4,5],   dtype=np.float32)
@@ -223,25 +98,10 @@ def run_test():
         num_bases_rgb = len(bases_rgb)
         stride = 8
 
-        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[10])
-        # num_frames = len(rgbs)
-        
+        rgbs, gt_labels, gt_3dTo2Ds, gt_boxes2d, rgbs_norm, image_index = load_dummy_datas(index[10])    
         rgb_shape   = rgbs[0].shape
-        # pdb.set_trace()
         rgb_feature_shape = ((rgb_shape[0]-1)//stride+1, (rgb_shape[1]-1)//stride+1)
         out_shape=(2,2)
-
-
-        #-----------------------
-        #check data
-        if 0:
-            fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 1000))
-            draw_lidar(lidars[0], fig=fig)
-            draw_gt_boxes3d(gt_boxes3d[0], fig=fig)
-            mlab.show(1)
-            cv2.waitKey(0)
-
-
 
     # set anchor boxes
     num_class = 2 #incude background
@@ -271,8 +131,8 @@ def run_test():
         summary_writer = tf.summary.FileWriter(out_dir+'/tf', sess.graph)
         saver  = tf.train.Saver()  
         # saver.restore(sess, './outputs/check_points/snap_2D_pretrain.ckpt')
-        saver.restore(sess, './outputs/check_points/snap_2dTo3D_val_120000.ckpt')
-        # saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000trainval.ckpt')
+        # saver.restore(sess, './outputs/check_points/snap_2dTo3D_val_120000.ckpt')
+        saver.restore(sess, './outputs/check_points/snap_2dTo3D__data_augmentation090000trainval.ckpt')
         # 
         # # pdb.set_trace()
         # var_lt_res=[v for v in tf.global_variables() if not v.name.startswith('fuse/3D')]
@@ -338,8 +198,6 @@ def run_test():
             batch_fuse_probs, batch_fuse_deltas, batch_fuse_deltas_3dTo2D =  sess.run([ fuse_probs, fuse_deltas, fuse_deltas_3dTo2D ],fd2)
             
             probs, boxes2d, projections = rcnn_nms_2d(batch_fuse_probs, batch_fuse_deltas, batch_proposals, batch_fuse_deltas_3dTo2D, threshold=0.3)
-            # print('nums of boxes3d : %d'%len(boxes3d))
-            # generat_test_reslut(probs, boxes3d, rgb_shape, int(index[iter]), boxes2d)
             speed=time.time()-start_time
             print('speed: %0.4fs'%speed)
             # pdb.set_trace()
@@ -355,12 +213,12 @@ def run_test():
 
                 img_rcnn_nms = draw_rgb_projections(rgb, projections, color=(0,0,255), thickness=1)
                 img_rgb_2d_detection = draw_boxes(rgb, boxes2d, color=(255,0,255), thickness=1)
-                # imshow('draw_rcnn_nms',img_rcnn_nms)
+                imshow('draw_rcnn_nms',img_rcnn_nms)
                 # imshow('img_rgb_2d_detection',img_rgb_2d_detection)
-                cv2.imwrite(save_path2d+'/%05d.png'%index[iter],img_rgb_2d_detection)
-                cv2.imwrite(save_path+'/%05d.png'%index[iter],img_rcnn_nms)
+                # cv2.imwrite(save_path2d+'/%05d.png'%index[iter],img_rgb_2d_detection)
+                # cv2.imwrite(save_path+'/%05d.png'%index[iter],img_rcnn_nms)
 
-                # cv2.waitKey(0)
+                cv2.waitKey(50)
                 # plt.pause(0.25)
                 # mlab.clf(mfig)
 
